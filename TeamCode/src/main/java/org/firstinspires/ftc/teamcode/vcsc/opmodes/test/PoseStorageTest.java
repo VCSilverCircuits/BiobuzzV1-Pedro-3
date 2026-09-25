@@ -6,7 +6,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.postsystems.PoseStorage;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.postsystems.PoseConstants;
 
-@TeleOp(name = "PoseStorageTest")
+@TeleOp(name = "PoseStorageTest")// preselectTeleOp = "telename")
 public class PoseStorageTest extends OpMode {
     @Override
     public void init() {
