@@ -22,6 +22,7 @@ public class AprilTagDetection {
 
         allianceColor = color;
 
+        // add clustering
         switch (allianceColor) {
             case RED:
                     scoringTagNum = 32;
