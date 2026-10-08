@@ -13,6 +13,25 @@ import com.qualcomm.robotcore.hardware.Servo;
 @Autonomous(name = "scrimAutoRed", preselectTeleOp = "scrimTeleRed")
 @Disabled // temp for tuning
 public class scrimAutoRed extends OpMode {
+    @Override
+    public void init() {
+        hardwareMap();
+
+        // front left and front right are reversed
+        frontLeft.setDirection(DcMotorSimple.Direction.REVERSE);
+        backLeft.setDirection(DcMotorSimple.Direction.REVERSE);
+    }
+
+    @Override
+    public void start() {
+
+    }
+
+    @Override
+    public void loop() {
+
+    }
+
     // MAPPINGS ------------------------
     private DcMotorEx frontRight;
     private DcMotorEx frontLeft;
@@ -48,23 +67,4 @@ public class scrimAutoRed extends OpMode {
         pinpointDriver = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
     }
     // MAPPINGS ------------------------
-
-    @Override
-    public void init() {
-        hardwareMap();
-
-        // front left and front right are reversed
-        frontLeft.setDirection(DcMotorSimple.Direction.REVERSE);
-        backLeft.setDirection(DcMotorSimple.Direction.REVERSE);
-    }
-
-    @Override
-    public void start() {
-
-    }
-
-    @Override
-    public void loop() {
-
-    }
 }
