@@ -83,10 +83,10 @@ public class scrimAutoRed extends OpMode {
     private Timer pathTimer;
 
     PIDFCoefficients flywheelPIDF = new PIDFCoefficients(p, i, d, f);
-    public static double p = 32;
+    public static double p = 36;
     public static double i = 1;
     public static double d = 28.5;
-    public static double f = 16;
+    public static double f = 20;
     public static double flywheelRPM = 2450;
 
     private final Pose start = PoseConstants.p.of(58, 8, 90);
@@ -112,6 +112,7 @@ public class scrimAutoRed extends OpMode {
     }
 
     public Path fullParking() {
+        //return Paths.line(point4Start, point4).linear(point4Start, point4);
         return Paths.line(point4Start, point4).linear(point4Start, point4);
     }
 
@@ -137,6 +138,7 @@ public class scrimAutoRed extends OpMode {
     @Override
     public void start() {
         pathTimer.reset();
+        frontRamp.setPosition(1);
     }
 
     @Override
@@ -181,7 +183,7 @@ public class scrimAutoRed extends OpMode {
                 intake.setPower(-1);
                 inner.setPower(-1);
 
-                if (pathTimer.seconds() > 2.5) {
+                if (pathTimer.seconds() > 3.5) {
                     currentState = AllStates.endShoot;
                     pathTimer.reset();
                 }
@@ -191,8 +193,8 @@ public class scrimAutoRed extends OpMode {
 
                 flywheelRPM = 0;
 
-                inner.setPower(-1);
-                intake.setPower(-1);
+                inner.setPower(0);
+                intake.setPower(1);
 
                 if (pathTimer.seconds() > .5) {
                     currentState = AllStates.goToForwardAfterShoot;
@@ -210,6 +212,9 @@ public class scrimAutoRed extends OpMode {
                 }
                 break;
             case goToIntaking:
+                intake.setPower(-1);
+                inner.setPower(-1);
+
                 follower.follow(goIntakePath());
 
                 targetPose = goIntakePath().endPose();
@@ -232,6 +237,9 @@ public class scrimAutoRed extends OpMode {
             case goToFullParking:
                 follower.follow(fullParking());
 
+                intake.setPower(1);
+                inner.setPower(0);
+
                 targetPose = fullParking().endPose();
 
                 if (pathTimer.seconds() > 2.5) {
@@ -244,6 +252,7 @@ public class scrimAutoRed extends OpMode {
 
                 intake.setPower(0);
                 inner.setPower(0);
+                frontRamp.setPosition(1);
 
                 break;
         }

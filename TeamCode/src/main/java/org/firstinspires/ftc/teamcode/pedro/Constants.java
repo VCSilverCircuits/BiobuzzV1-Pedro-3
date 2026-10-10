@@ -72,6 +72,7 @@ public class Constants {
                 c.naturalStrafeDeceleration.set(61.72219996365364);
 
                 c.timeoutConstraint.set(500.0);
+                c.headingConstraint.set(Math.toRadians(0.4));
             }
     );
 }

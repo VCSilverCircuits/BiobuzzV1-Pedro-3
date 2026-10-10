@@ -25,12 +25,15 @@ public class scrimTeleOp extends OpMode {
 
     private boolean heldShooting;
 
+    private boolean rampToggle;
+    private boolean rampWasLastPressed;
+
     // Flywheel PIDF and other setup
     PIDFCoefficients flywheelPIDF = new PIDFCoefficients(p, i, d, f);
-    public static double p = 32;
+    public static double p = 36;
     public static double i = 1;
     public static double d = 28.5;
-    public static double f = 16;
+    public static double f = 20;
     public static double flywheelRPM = 2450;
 
     @Override
@@ -51,7 +54,9 @@ public class scrimTeleOp extends OpMode {
 
     @Override
     public void start() {
-
+        frontRamp.setPosition(1);
+        rampWasLastPressed = false;
+        rampToggle = false;
     }
 
     @Override
@@ -121,12 +126,23 @@ public class scrimTeleOp extends OpMode {
                 previousActionB = null;
             }
         }
+        if (gamepad1.y && !rampWasLastPressed) {
+            rampToggle = !rampToggle;
+        }
+        rampWasLastPressed = gamepad1.y;
+        if (rampToggle) {
+            frontRamp.setPosition(0.4);
+        } else {
+            frontRamp.setPosition(1);
+        }
+
         // Controls
 
         //Telemetry
         telemetry.addData("Current Action:", currentActionB);
         telemetry.addData("Flywheel Power:", flywheel.getPower());
         telemetry.addData("Flywheel Velocity:", (flywheel.getVelocity()/28)*60);
+        telemetry.addData("Ramp Position", frontRamp.getPosition());
     }
 
     public double rpmToTPS(double rpm) {
