@@ -13,30 +13,39 @@ import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.pedro.Constants;
-@TeleOp(name = "scrimTeleRed")
+import org.firstinspires.ftc.teamcode.vcsc.subsystems.posesystems.PoseStorage;
+
+@TeleOp(name = "scrimTeleOp")
 @Configurable
-public class scrimTeleRed extends OpMode {
+public class scrimTeleOp extends OpMode {
     private Follower follower;
 
-    private enum ActionsB {
-        INTAKING,
-        BACKSPIN,
-        SHOOTING,
-    }
-
-    private static ActionsB currentActionB;
-    private static ActionsB previousActionB;
+    private static TeleActions currentActionB;
+    private static TeleActions previousActionB;
 
     private boolean heldShooting;
+
+    // Flywheel PIDF and other setup
+    PIDFCoefficients flywheelPIDF = new PIDFCoefficients(p, i, d, f);
+    public static double p = 32;
+    public static double i = 1;
+    public static double d = 28.5;
+    public static double f = 16;
+    public static double flywheelRPM = 2450;
 
     @Override
     public void init() {
         hardwareMap();
 
         follower = Constants.create(hardwareMap);
-        flywheel.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, flywheelPIDF);
-        currentActionB = ActionsB.INTAKING;
 
+        // follower.setPose(PoseStorage.autoEnd);
+
+        flywheel.setDirection(DcMotorSimple.Direction.FORWARD);
+        flywheel.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        flywheel.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, flywheelPIDF);
+
+        currentActionB = TeleActions.INTAKING;
         previousActionB = null;
     }
 
@@ -58,20 +67,19 @@ public class scrimTeleRed extends OpMode {
         follower.update();
         // Driving
 
-        // ActionsB
-
+        // Actions
         switch (currentActionB) {
             case INTAKING:
-                ballStop.setPosition(0.75);
+                ballStop.setPosition(0.7);
 
                 intake.setPower(-1);
                 inner.setPower(-1);
                 break;
             case BACKSPIN:
-                ballStop.setPosition(0.75);
+                ballStop.setPosition(0.7);
 
                 intake.setPower(1);
-                inner.setPower(0);
+                inner.setPower(-1);
                 break;
             case SHOOTING:
                 ballStop.setPosition(0.9);
@@ -80,13 +88,22 @@ public class scrimTeleRed extends OpMode {
                 inner.setPower(-1);
                 break;
         }
+        // Actions
 
+        // Turn on flywheel velocity on start
+        flywheel.setVelocity(rpmToTPS(flywheelRPM));
+        flywheelPIDF.p = p;
+        flywheelPIDF.i = i;
+        flywheelPIDF.d = d;
+        flywheelPIDF.f = f;
+
+        // Controls
         if (gamepad1.right_bumper) {
-            currentActionB = ActionsB.INTAKING;
+            currentActionB = TeleActions.INTAKING;
         }
 
         if (gamepad1.left_bumper) {
-            currentActionB = ActionsB.BACKSPIN;
+            currentActionB = TeleActions.BACKSPIN;
         }
 
         if (gamepad1.right_trigger > 0.56) {
@@ -96,7 +113,7 @@ public class scrimTeleRed extends OpMode {
                 previousActionB = currentActionB;
             }
 
-            currentActionB = ActionsB.SHOOTING;
+            currentActionB = TeleActions.SHOOTING;
         } else {
             if (heldShooting) {
                 heldShooting = false;
@@ -104,17 +121,17 @@ public class scrimTeleRed extends OpMode {
                 previousActionB = null;
             }
         }
-        // Turn on flywheel velocity on start
-        flywheel.setVelocity(rpmToTPS(flywheelRPM));
-        flywheelPIDF.p = p;
-        flywheelPIDF.i = i;
-        flywheelPIDF.d = d;
-        flywheelPIDF.f = f;
+        // Controls
 
         //Telemetry
         telemetry.addData("Current Action:", currentActionB);
         telemetry.addData("Flywheel Power:", flywheel.getPower());
         telemetry.addData("Flywheel Velocity:", (flywheel.getVelocity()/28)*60);
+    }
+
+    public double rpmToTPS(double rpm) {
+        final double TICKS_PER_REVOLUTION = 28.0;
+        return (rpm * TICKS_PER_REVOLUTION) / 60;
     }
 
     // MAPPINGS ------------------------
@@ -125,7 +142,6 @@ public class scrimTeleRed extends OpMode {
 
     private DcMotorEx intake;
     private DcMotorEx inner;
-    // turret motor when added
     private DcMotorEx flywheel;
 
     /*private Servo turretRight;
@@ -133,17 +149,8 @@ public class scrimTeleRed extends OpMode {
     private Servo ballStop;
     private Servo frontRamp;
 
-
     private RevColorSensorV3 ledStick;
     private GoBildaPinpointDriver pinpointDriver;
-
-    // Flywheel PIDF and other setup
-    public static double p = 32;
-    public static double i = 1;
-    public static double d = 28.5;
-    public static double f = 16;
-    PIDFCoefficients flywheelPIDF = new PIDFCoefficients(p, i, d, f);
-    public static double flywheelRPM = 4700;
 
     public void hardwareMap() {
         frontRight = hardwareMap.get(DcMotorEx.class, "frontRight");
@@ -163,12 +170,6 @@ public class scrimTeleRed extends OpMode {
         pinpointDriver = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
 
         flywheel = hardwareMap.get(DcMotorEx.class, "scrimFlywheel");
-        flywheel.setDirection(DcMotorSimple.Direction.FORWARD);
-        flywheel.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-    }
-    public double rpmToTPS(double rpm) {
-        final double TICKS_PER_REVOLUTION = 28.0;
-        return (rpm * TICKS_PER_REVOLUTION) / 60;
     }
     // MAPPINGS ------------------------
 }

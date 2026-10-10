@@ -4,8 +4,8 @@ import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-import org.firstinspires.ftc.teamcode.vcsc.subsystems.postsystems.PoseStorage;
-import org.firstinspires.ftc.teamcode.vcsc.subsystems.postsystems.PoseConstants;
+import org.firstinspires.ftc.teamcode.vcsc.subsystems.posesystems.PoseStorage;
+import org.firstinspires.ftc.teamcode.vcsc.subsystems.posesystems.PoseConstants;
 
 @TeleOp(name = "PoseStorageTest")// preselectTeleOp = "telename")
 @Disabled
