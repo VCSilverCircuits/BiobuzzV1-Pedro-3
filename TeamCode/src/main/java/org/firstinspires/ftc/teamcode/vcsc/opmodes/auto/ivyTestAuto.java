@@ -31,7 +31,6 @@ public class ivyTestAuto extends LinearOpMode {
     private final Pose point3 = poseFactory.of(28.1865, 49.9137, 180);
     private final Pose point4Start = poseFactory.of(28.1865, 49.9137, 90);
     private final Pose point4 = poseFactory.of(10.4471, 91.1985, 90);
-    private final Pose point5 = poseFactory.of(11.4471, 92.1985, 90);
     // Autonomous routine
     public Command autoRoutine() {
         return sequential(
@@ -42,7 +41,6 @@ public class ivyTestAuto extends LinearOpMode {
                 follow(follower, path3path),
                 waitMs(2000),
                 follow(follower, path4path),
-                // follow(follower, path5()),
                 waitMs(2000)
         );
     }
@@ -81,7 +79,4 @@ public class ivyTestAuto extends LinearOpMode {
     public Path path3path = Paths.line(point3Start, point3).linear(point3Start, point3);
 
     public Path path4path = Paths.line(point4Start, point4).linear(point4Start, point4);
-
-    // public Path path5() { return Paths.line(point4, point5).linear(point4, point5); }
-
 }
