@@ -107,7 +107,7 @@ public class scrimAutoRed extends OpMode {
     public Command startFlywheel() {
         return Command.build()
                 .setExecute(() -> startFlywheelVoid())
-                .setDone(() -> flywheel.getVelocity() > 2350 && flywheel.getVelocity() < 2550);
+                .setDone(() -> tpsToRPM(flywheel.getVelocity()) > 2350 && tpsToRPM(flywheel.getVelocity()) < 2550);
     }
 
     private void startFlywheelVoid() {
@@ -321,6 +321,11 @@ public class scrimAutoRed extends OpMode {
     public double rpmToTPS(double rpm) {
         final double TICKS_PER_REVOLUTION = 28.0;
         return (rpm * TICKS_PER_REVOLUTION) / 60;
+    }
+
+    public double tpsToRPM(double tps) {
+        final double TICKS_PER_REVOLUTION = 28.0;
+        return (tps * 60) / TICKS_PER_REVOLUTION;
     }
 
     @Override
