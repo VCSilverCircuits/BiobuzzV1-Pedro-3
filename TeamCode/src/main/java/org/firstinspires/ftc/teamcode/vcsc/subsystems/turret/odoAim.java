@@ -8,6 +8,8 @@ import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
+// NOTE: I wrote most of this at 1AM, so the names of some variables may need to be changed to make more sense
+
 public class odoAim {
     private Servo turretHeadingRight;
     private Servo turretHeadingLeft;
