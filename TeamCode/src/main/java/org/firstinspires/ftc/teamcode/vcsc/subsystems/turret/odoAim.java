@@ -1,19 +1,16 @@
 package org.firstinspires.ftc.teamcode.vcsc.subsystems.turret;
 
-import android.hardware.HardwareBuffer;
-
 import com.pedropathing.follower.Follower;
 import com.pedropathing.math.Pose;
-import com.pedropathing.utils.Angle;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
-import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
 public class odoAim {
-    private Servo turretHeadingServo;
+    private Servo turretHeadingRight;
+    private Servo turretHeadingLeft;
     private Follower follower;
     private Limelight3A limelight;
 
@@ -21,9 +18,15 @@ public class odoAim {
     private Pose audienceTargetPose;
     private Pose scoringTargetPose;
 
-    private double turretPosition;
-
     private double targetTurretHeading;
+
+    // TODO: set the maximum and minimum rotation range of the servos based on how they were configured in the servo programmer
+    private final double MIN_SERVO_RADIANS = Math.toRadians(-175); // current range of the servos (NOT THE TURRET) are -175 to 175 degrees
+    private final double MAX_SERVO_RADIANS = Math.toRadians(175);
+
+    private final double TURRET_GEAR_TO_SERVO_RATIO = 1/1; // TODO: replace 1/1 with (turret gear teeth) / (servo gear teeth)
+
+    private boolean isManualMode; // TODO: add a manual mode toggle bound to second controller for backup if automatic tracking fails
 
     // the PedroPathing coordinates of each hive
     final Pose REDTARGETAUDIENCE = new Pose(0, 0);
@@ -38,6 +41,12 @@ public class odoAim {
         this.audienceTargetPose = isRed ? REDTARGETAUDIENCE : BLUETARGETAUDIENCE;
         this.scoringTargetPose = isRed ? REDTARGETSCORING : BLUETARGETSCORING;
 
+        // hardware maps the turret heading servos
+        turretHeadingRight = hardwareMap.get(Servo.class, "turretRight");
+        turretHeadingLeft = hardwareMap.get(Servo.class, "turretLeft");
+
+        // passes the follower into the instance of this class
+        this.follower = follower;
     }
 
     // odoAim looped method
@@ -54,8 +63,36 @@ public class odoAim {
 
         /*
         determines how far the turret needs to rotate to reach the target angle by subtracting how much
-        the robot has currently rotated and normalizing the radian measurement between pi and -pi (180 and -180 degrees)
+        the robot has currently rotated
          */
-        this.targetTurretHeading = AngleUnit.normalizeRadians(robotRelativeTargetAngle - follower.pose().heading());
+        this.targetTurretHeading = robotRelativeTargetAngle - follower.pose().heading();
+
+        /* gets the normalized target turret heading and the absolute value of that to determine if
+        the target is within the set range that the hardware can safely reach
+         */
+        double normalizedTargetServoHeading = AngleUnit.normalizeRadians(targetTurretHeading / TURRET_GEAR_TO_SERVO_RATIO);
+        double absoluteNormalizedTargetServoHeading = Math.abs(normalizedTargetServoHeading);
+
+        // sets the servo rotation to the target angle and adjusts it to fit within the range if necessary
+        if (!isManualMode) {
+            if (absoluteNormalizedTargetServoHeading <= MAX_SERVO_RADIANS) {
+                turretHeadingRight.setPosition(normalizeToServoRotations(targetTurretHeading));
+                turretHeadingLeft.setPosition(normalizeToServoRotations(targetTurretHeading));
+
+            } else if (normalizedTargetServoHeading > MAX_SERVO_RADIANS) {
+                turretHeadingRight.setPosition(normalizeToServoRotations(MAX_SERVO_RADIANS));
+                turretHeadingLeft.setPosition(normalizeToServoRotations(MAX_SERVO_RADIANS));
+
+            } else {
+                turretHeadingRight.setPosition(normalizeToServoRotations(MIN_SERVO_RADIANS));
+                turretHeadingLeft.setPosition(normalizeToServoRotations(MIN_SERVO_RADIANS));
+            }
+        }
+    }
+
+    public double normalizeToServoRotations(double radians) {
+        double servoAngle = AngleUnit.normalizeRadians(radians / TURRET_GEAR_TO_SERVO_RATIO);
+
+        return (servoAngle - MIN_SERVO_RADIANS) / (MAX_SERVO_RADIANS - MIN_SERVO_RADIANS);
     }
 }
