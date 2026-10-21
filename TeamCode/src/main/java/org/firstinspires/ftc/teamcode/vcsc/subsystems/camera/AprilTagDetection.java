@@ -5,6 +5,8 @@ import static org.firstinspires.ftc.teamcode.vcsc.subsystems.camera.AprilTagStor
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
+import org.firstinspires.ftc.teamcode.vcsc.subsystems.alliance.AllianceColor;
+
 // Have to restart every opmode change (run init in init and then loop in loop)
 public class AprilTagDetection {
     public AllianceColor allianceColor;

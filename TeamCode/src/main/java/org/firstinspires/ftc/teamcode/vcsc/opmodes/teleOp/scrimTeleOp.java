@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.vcsc.opmodes.teleOp;
 
 import com.bylazar.configurables.annotations.Configurable;
 import com.pedropathing.follower.Follower;
+import com.pedropathing.utils.Timer;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.hardware.rev.RevColorSensorV3;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
@@ -14,6 +15,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.pedro.Constants;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.posesystems.PoseStorage;
+import org.firstinspires.ftc.teamcode.vcsc.subsystems.turret.hoodAngling;
 
 @TeleOp(name = "scrimTeleOp")
 @Configurable
@@ -34,7 +36,9 @@ public class scrimTeleOp extends OpMode {
     public static double i = 1;
     public static double d = 28.5;
     public static double f = 20;
-    public static double flywheelRPM = 2450;
+    public static double flywheelRPM = 2390;
+
+    public static double hoodAngleTemp = 0.38;
 
     @Override
     public void init() {
@@ -42,7 +46,9 @@ public class scrimTeleOp extends OpMode {
 
         follower = Constants.create(hardwareMap);
 
-        // follower.setPose(PoseStorage.autoEnd);
+        if (PoseStorage.autoEnd != null) {
+            follower.setPose(PoseStorage.autoEnd);
+        }
 
         flywheel.setDirection(DcMotorSimple.Direction.FORWARD);
         flywheel.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -55,13 +61,14 @@ public class scrimTeleOp extends OpMode {
     @Override
     public void start() {
         frontRamp.setPosition(1);
+        hoodAngle.setPosition(0.38);
         rampWasLastPressed = false;
         rampToggle = false;
     }
 
     @Override
     public void loop() {
-        // Driving
+        // Driving ---------
         // Robot Centric
         follower.manual(
                 -gamepad1.left_stick_y,
@@ -70,17 +77,21 @@ public class scrimTeleOp extends OpMode {
         );
 
         follower.update();
-        // Driving
+        // Driving ---------
 
-        // Actions
+        Timer shootIntakeTimer = new Timer();
+
+        // Actions ---------
         switch (currentActionB) {
             case INTAKING:
+                shootIntakeTimer.reset();
                 ballStop.setPosition(0.7);
 
                 intake.setPower(-1);
                 inner.setPower(-1);
                 break;
             case BACKSPIN:
+                shootIntakeTimer.reset();
                 ballStop.setPosition(0.7);
 
                 intake.setPower(1);
@@ -89,11 +100,13 @@ public class scrimTeleOp extends OpMode {
             case SHOOTING:
                 ballStop.setPosition(0.9);
 
-                intake.setPower(0);
                 inner.setPower(-1);
+                if (shootIntakeTimer.seconds() > 1) {
+                    intake.setPower(0);
+                }
                 break;
         }
-        // Actions
+        // Actions ---------
 
         // Turn on flywheel velocity on start
         flywheel.setVelocity(rpmToTPS(flywheelRPM));
@@ -102,7 +115,7 @@ public class scrimTeleOp extends OpMode {
         flywheelPIDF.d = d;
         flywheelPIDF.f = f;
 
-        // Controls
+        // Controls ---------
         if (gamepad1.right_bumper) {
             currentActionB = TeleActions.INTAKING;
         }
@@ -126,6 +139,11 @@ public class scrimTeleOp extends OpMode {
                 previousActionB = null;
             }
         }
+
+        // hoodAngling.setFlywheelSpeedToHoodAngle(hoodAngle.getPosition(), flywheelPIDF);
+
+        hoodAngle.setPosition(hoodAngleTemp);
+
         if (gamepad1.y && !rampWasLastPressed) {
             rampToggle = !rampToggle;
         }
@@ -135,14 +153,15 @@ public class scrimTeleOp extends OpMode {
         } else {
             frontRamp.setPosition(1);
         }
+        // Controls ---------
 
-        // Controls
-
-        //Telemetry
+        // Telemetry ---------
         telemetry.addData("Current Action:", currentActionB);
         telemetry.addData("Flywheel Power:", flywheel.getPower());
         telemetry.addData("Flywheel Velocity:", (flywheel.getVelocity()/28)*60);
         telemetry.addData("Ramp Position", frontRamp.getPosition());
+        telemetry.addData("Hood Angle", hoodAngle.getPosition());
+        // Telemetry ---------
     }
 
     public double rpmToTPS(double rpm) {
@@ -164,6 +183,7 @@ public class scrimTeleOp extends OpMode {
     private Servo turretLeft;*/
     private Servo ballStop;
     private Servo frontRamp;
+    private Servo hoodAngle;
 
     private RevColorSensorV3 ledStick;
     private GoBildaPinpointDriver pinpointDriver;
@@ -181,6 +201,7 @@ public class scrimTeleOp extends OpMode {
         turretLeft = hardwareMap.get(Servo.class, "turretleft");*/
         ballStop = hardwareMap.get(Servo.class, "ballStop");
         frontRamp = hardwareMap.get(Servo.class, "frontRamp");
+        hoodAngle = hardwareMap.get(Servo.class, "hoodAngle");
 
         ledStick = hardwareMap.get(RevColorSensorV3.class, "ledStick");
         pinpointDriver = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");

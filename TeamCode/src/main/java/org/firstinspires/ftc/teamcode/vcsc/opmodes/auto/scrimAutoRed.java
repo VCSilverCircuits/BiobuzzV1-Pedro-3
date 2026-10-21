@@ -23,6 +23,8 @@ import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.pedropathing.follower.Follower;
 import org.firstinspires.ftc.teamcode.pedro.Constants;
+import org.firstinspires.ftc.teamcode.vcsc.subsystems.alliance.AllianceColor;
+import org.firstinspires.ftc.teamcode.vcsc.subsystems.alliance.currentAlliance;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.posesystems.PoseConstants;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.posesystems.PoseStorage;
 
@@ -184,6 +186,8 @@ public class scrimAutoRed extends OpMode {
         pathTimer = new Timer();
         //currentState = AllStates.startFlywheel;
         ballStop.setPosition(0.7);
+
+        currentAlliance.allianceColor = AllianceColor.RED;
 
         Scheduler.reset();
         follower.update();
