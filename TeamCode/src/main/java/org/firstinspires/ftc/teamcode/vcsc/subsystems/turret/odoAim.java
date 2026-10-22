@@ -7,6 +7,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.teamcode.vcsc.subsystems.alliance.AllianceColor;
 
 // NOTE: I wrote most of this at 1AM, so the names of some variables may need to be changed to make more sense
 
@@ -31,17 +32,17 @@ public class odoAim {
     private boolean isManualMode; // TODO: add a manual mode toggle bound to second controller for backup if automatic tracking fails
 
     // the PedroPathing coordinates of each hive
-    final Pose REDTARGETAUDIENCE = new Pose(0, 0);
-    final Pose REDTARGETSCORING = new Pose(0,0);
-    final Pose BLUETARGETAUDIENCE = new Pose(0,0);
-    final Pose BLUETARGETSCORING = new Pose(0,0);
+    final Pose REDTARGETAUDIENCE = new Pose(58, 54);
+    final Pose REDTARGETSCORING = new Pose(58,90);
+    final Pose BLUETARGETAUDIENCE = new Pose(86,54);
+    final Pose BLUETARGETSCORING = new Pose(86,90);
 
     // odoAim initialization
-    public odoAim(HardwareMap hardwareMap, Follower follower, boolean isRed) {
+    public odoAim(HardwareMap hardwareMap, Follower follower, AllianceColor allianceColor) {
 
         // changes tracked target depending on if we are on blue or red
-        this.audienceTargetPose = isRed ? REDTARGETAUDIENCE : BLUETARGETAUDIENCE;
-        this.scoringTargetPose = isRed ? REDTARGETSCORING : BLUETARGETSCORING;
+        this.audienceTargetPose = allianceColor == allianceColor.RED ? REDTARGETAUDIENCE : BLUETARGETAUDIENCE;
+        this.scoringTargetPose = allianceColor == allianceColor.RED ? REDTARGETSCORING : BLUETARGETSCORING;
 
         // hardware maps the turret heading servos
         turretHeadingRight = hardwareMap.get(Servo.class, "turretRight");
@@ -91,9 +92,15 @@ public class odoAim {
             }
         }
     }
+    public void auto() {
+        this.isManualMode = true;
+    }
+    public void manual() {
+        this.isManualMode = false;
+    }
 
     public double normalizeToServoRotations(double radians) {
-        double servoAngle = AngleUnit.normalizeRadians(radians / TURRET_GEAR_TO_SERVO_RATIO);
+        double servoAngle = AngleUnit.normalizeRadians(radians * TURRET_GEAR_TO_SERVO_RATIO);
 
         return (servoAngle - MIN_SERVO_RADIANS) / (MAX_SERVO_RADIANS - MIN_SERVO_RADIANS);
     }
