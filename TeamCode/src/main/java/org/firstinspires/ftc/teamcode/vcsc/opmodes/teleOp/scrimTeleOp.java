@@ -4,9 +4,7 @@ import com.bylazar.configurables.annotations.Configurable;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.utils.Timer;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
-import com.qualcomm.hardware.rev.RevColorSensorV3;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -14,13 +12,18 @@ import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.pedro.Constants;
+import org.firstinspires.ftc.teamcode.vcsc.external.goBildaPrism.Color;
+import org.firstinspires.ftc.teamcode.vcsc.external.goBildaPrism.GoBildaPrismDriver;
+import org.firstinspires.ftc.teamcode.vcsc.external.goBildaPrism.PrismAnimations;
+import org.firstinspires.ftc.teamcode.vcsc.subsystems.alliance.AllianceColor;
+import org.firstinspires.ftc.teamcode.vcsc.subsystems.alliance.currentAlliance;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.posesystems.PoseStorage;
-import org.firstinspires.ftc.teamcode.vcsc.subsystems.turret.hoodAngling;
+import org.firstinspires.ftc.teamcode.vcsc.subsystems.turret.odoAim;
 
-@TeleOp(name = "scrimTeleOp")
 @Configurable
 public class scrimTeleOp extends OpMode {
     private Follower follower;
+    private odoAim OdoAim;
 
     private static TeleActions currentActionB;
     private static TeleActions previousActionB;
@@ -45,6 +48,8 @@ public class scrimTeleOp extends OpMode {
         hardwareMap();
 
         follower = Constants.create(hardwareMap);
+        OdoAim = new odoAim(hardwareMap, follower, currentAlliance.allianceColor);
+        OdoAim.auto();
 
         if (PoseStorage.autoEnd != null) {
             follower.setPose(PoseStorage.autoEnd);
@@ -56,6 +61,17 @@ public class scrimTeleOp extends OpMode {
 
         currentActionB = TeleActions.INTAKING;
         previousActionB = null;
+
+        PrismAnimations.Snakes snakes = new PrismAnimations.Snakes(Color.GREEN);
+        if (currentAlliance.allianceColor == AllianceColor.BLUE) {
+            snakes.setColors(Color.BLUE);
+        } else {
+            snakes.setColors(Color.RED);
+        }
+        snakes.setBrightness(75);
+        snakes.setSnakeLength(20);
+        snakes.setSpeed(0.1f);
+        ledStick.insertAndUpdateAnimation(GoBildaPrismDriver.LayerHeight.LAYER_0, snakes);
     }
 
     @Override
@@ -77,11 +93,12 @@ public class scrimTeleOp extends OpMode {
         );
 
         follower.update();
+        OdoAim.updateTurretHeading();
         // Driving ---------
 
+        // Actions ---------
         Timer shootIntakeTimer = new Timer();
 
-        // Actions ---------
         switch (currentActionB) {
             case INTAKING:
                 shootIntakeTimer.reset();
@@ -161,6 +178,7 @@ public class scrimTeleOp extends OpMode {
         telemetry.addData("Flywheel Velocity:", (flywheel.getVelocity()/28)*60);
         telemetry.addData("Ramp Position", frontRamp.getPosition());
         telemetry.addData("Hood Angle", hoodAngle.getPosition());
+        telemetry.addData("allience colro", currentAlliance.allianceColor);
         // Telemetry ---------
     }
 
@@ -185,7 +203,7 @@ public class scrimTeleOp extends OpMode {
     private Servo frontRamp;
     private Servo hoodAngle;
 
-    private RevColorSensorV3 ledStick;
+    private GoBildaPrismDriver ledStick;
     private GoBildaPinpointDriver pinpointDriver;
 
     public void hardwareMap() {
@@ -203,7 +221,7 @@ public class scrimTeleOp extends OpMode {
         frontRamp = hardwareMap.get(Servo.class, "frontRamp");
         hoodAngle = hardwareMap.get(Servo.class, "hoodAngle");
 
-        ledStick = hardwareMap.get(RevColorSensorV3.class, "ledStick");
+        ledStick = hardwareMap.get(GoBildaPrismDriver.class, "ledStick");
         pinpointDriver = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
 
         flywheel = hardwareMap.get(DcMotorEx.class, "scrimFlywheel");

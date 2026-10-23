@@ -1,7 +1,5 @@
 package org.firstinspires.ftc.teamcode.vcsc.opmodes.auto;
 
-import static com.pedropathing.ivy.Scheduler.schedule;
-import static com.pedropathing.ivy.commands.Commands.instant;
 import static com.pedropathing.ivy.commands.Commands.waitMs;
 import static com.pedropathing.ivy.groups.Groups.sequential;
 import static com.pedropathing.ivy.pedro.PedroCommands.follow;
@@ -23,12 +21,10 @@ import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.pedropathing.follower.Follower;
 import org.firstinspires.ftc.teamcode.pedro.Constants;
-import org.firstinspires.ftc.teamcode.vcsc.subsystems.alliance.AllianceColor;
-import org.firstinspires.ftc.teamcode.vcsc.subsystems.alliance.currentAlliance;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.posesystems.PoseConstants;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.posesystems.PoseStorage;
 
-@Autonomous(name = "scrimAutoRed", preselectTeleOp = "scrimTeleOp")
+@Autonomous(name = "scrimAutoRed", preselectTeleOp = "scrimTeleOpBlue")
 public class scrimAutoRed extends OpMode {
     // MAPPINGS ------------------------
     private DcMotorEx frontRight;
@@ -71,7 +67,7 @@ public class scrimAutoRed extends OpMode {
 
     private Follower follower;
 
-    /*private enum AllStates {
+    private enum AllStates {
         startFlywheel,
         startShoot,
         endShoot,
@@ -82,7 +78,8 @@ public class scrimAutoRed extends OpMode {
         end
     }
 
-    private AllStates currentState;*/
+    private AllStates currentState;
+
     private Timer pathTimer;
 
     PIDFCoefficients flywheelPIDF = new PIDFCoefficients(p, i, d, f);
@@ -101,79 +98,22 @@ public class scrimAutoRed extends OpMode {
     private final Pose point3 = PoseConstants.p.of(28.1865, 49.9137, 180);
     private final Pose point4Start = PoseConstants.p.of(28.1865, 49.9137, 180);
     private final Pose point4 = PoseConstants.p.of(10.4471, 95.1985, 90);
-    public Path forwardAfterShoot = Paths.line(start, path1).linear(start, path1);
-    public Path goIntakePath = Paths.curve(point2Start, point2Control1, point2).linear(point2Start, point2);
-    public Path halfOfParking = Paths.line(point3Start, point3).linear(point3Start, point3);
-    public Path fullParking = Paths.line(point4Start, point4).linear(point4Start, point4);
 
-    public Command startFlywheel() {
-        return Command.build()
-                .setExecute(() -> startFlywheelVoid())
-                .setDone(() -> tpsToRPM(flywheel.getVelocity()) > 2350 && tpsToRPM(flywheel.getVelocity()) < 2550);
+    public Path forwardAfterShoot() {
+        return Paths.line(start, path1).linear(start, path1);
     }
 
-    private void startFlywheelVoid() {
-        ballStop.setPosition(0.7);
-
-        flywheelRPM = 2450;
-
-        intake.setPower(-1);
-        inner.setPower(-1);
+    public Path goIntakePath() {
+        return Paths.curve(point2Start, point2Control1, point2).linear(point2Start, point2);
     }
 
-    public Command startShoot() {
-        return Command.build()
-                .setExecute(() -> startShootVoid());
+    public Path halfOfParking() {
+        return Paths.line(point3Start, point3).linear(point3Start, point3);
     }
 
-    private void startShootVoid() {
-        ballStop.setPosition(0.9);
-
-        intake.setPower(-1);
-        inner.setPower(-1);
-    }
-
-    public Command endShoot() {
-        return Command.build()
-                .setExecute(() -> endShootVoid());
-    }
-
-    private void endShootVoid() {
-        ballStop.setPosition(0.7);
-
-        flywheelRPM = 0;
-
-        inner.setPower(-1);
-        intake.setPower(-1);
-    }
-
-    public Command endOfAuto() {
-        return Command.build()
-            .setExecute(() -> endOfAutoVoid());
-    }
-
-    private void endOfAutoVoid() {
-        flywheelRPM = 0;
-
-        intake.setPower(0);
-        inner.setPower(0);
-        frontRamp.setPosition(1);
-    }
-
-    public Command autoRoutine() {
-        return sequential(
-                startFlywheel(),
-                waitMs(4000),
-                startShoot(),
-                waitMs(3500),
-                endShoot(),
-                follow(follower, forwardAfterShoot),
-                follow(follower, goIntakePath),
-                waitMs(1000),
-                follow(follower, halfOfParking),
-                follow(follower, fullParking),
-                endOfAuto()
-        );
+    public Path fullParking() {
+        //return Paths.line(point4Start, point4).linear(point4Start, point4);
+        return Paths.line(point4Start, point4).linear(point4Start, point4);
     }
 
     @Override
@@ -181,32 +121,34 @@ public class scrimAutoRed extends OpMode {
         hardwareMap();
 
         follower = Constants.create(hardwareMap);
-        follower.setPose(start);
-        PoseStorage.autoEnd = PoseConstants.p.of(0,0,0);
+        // poses
+        // RED -
+        // BLUE -
+        follower.setPose(PoseConstants.p.of(58,8,90));
+
         pathTimer = new Timer();
-        //currentState = AllStates.startFlywheel;
+
+        currentState = AllStates.startFlywheel;
+
         ballStop.setPosition(0.7);
 
-        currentAlliance.allianceColor = AllianceColor.RED;
-
-        Scheduler.reset();
-        follower.update();
+        PoseStorage.autoEnd = PoseConstants.p.of(0,0,0);
     }
 
     @Override
     public void start() {
         pathTimer.reset();
-
-        Scheduler.schedule(autoRoutine());
         frontRamp.setPosition(1);
     }
 
     @Override
     public void loop() {
         follower.update();
-        Scheduler.execute();
 
-        // updatePathState();
+        updatePathState();
+
+        updateTelemetry(telemetry);
+        telemetry.update();
 
         flywheel.setVelocity(rpmToTPS(flywheelRPM));
         flywheelPIDF.p = p;
@@ -215,19 +157,13 @@ public class scrimAutoRed extends OpMode {
         flywheelPIDF.f = f;
 
         telemetry.addData("Pose", follower.pose());
-        telemetry.addData("Auto Routine", Scheduler.isScheduled(autoRoutine()));
-        telemetry.addData("Start Flywheel is Scheduled", Scheduler.isScheduled(startFlywheel()));
-        telemetry.addData("Follower Mode", follower.mode());
-
-        if (follower.currentPath() != null) {
-            telemetry.addData("Current path distance remaining", follower.distanceToEndpoint());
-            telemetry.addData("Path number", follower.pathIndex());
-        }
-
-        telemetry.update();
+        telemetry.addData("isClose", isClose());
+        telemetry.addData("isBusy", follower.isBusy());
     }
 
-    /*public void updatePathState() {
+    private Pose targetPose = new Pose(0,0,0);
+
+    public void updatePathState() {
         switch (currentState) {
             case startFlywheel:
                 ballStop.setPosition(0.7);
@@ -270,7 +206,7 @@ public class scrimAutoRed extends OpMode {
 
                 targetPose = forwardAfterShoot().endPose();
 
-                if (pathTimer.seconds() > 1) {
+                if (follower.isBusy() || pathTimer.seconds() > 1) {
                     currentState = AllStates.goToIntaking;
                     pathTimer.reset();
                 }
@@ -293,7 +229,7 @@ public class scrimAutoRed extends OpMode {
 
                 targetPose = halfOfParking().endPose();
 
-                if (pathTimer.seconds() > 1) {
+                if (follower.isBusy() || pathTimer.seconds() > 1) {
                     currentState = AllStates.goToFullParking;
                     pathTimer.reset();
                 }
@@ -306,7 +242,7 @@ public class scrimAutoRed extends OpMode {
 
                 targetPose = fullParking().endPose();
 
-                if (pathTimer.seconds() > 2.5) {
+                if (follower.isBusy() || pathTimer.seconds() > 2.5) {
                     currentState = AllStates.end;
                     pathTimer.reset();
                 }
@@ -320,16 +256,22 @@ public class scrimAutoRed extends OpMode {
 
                 break;
         }
-    }*/
+    }
 
     public double rpmToTPS(double rpm) {
         final double TICKS_PER_REVOLUTION = 28.0;
         return (rpm * TICKS_PER_REVOLUTION) / 60;
     }
 
-    public double tpsToRPM(double tps) {
-        final double TICKS_PER_REVOLUTION = 28.0;
-        return (tps * 60) / TICKS_PER_REVOLUTION;
+    public boolean isClose() {
+        Pose currentPose = follower.pose();
+        double distance = Math.hypot(targetPose.x() - currentPose.y(), targetPose.y() - currentPose.y());
+
+        if (distance < 3.0) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
     @Override

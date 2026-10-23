@@ -45,8 +45,8 @@ public class odoAim {
         this.scoringTargetPose = allianceColor == allianceColor.RED ? REDTARGETSCORING : BLUETARGETSCORING;
 
         // hardware maps the turret heading servos
-        turretHeadingRight = hardwareMap.get(Servo.class, "turretRight");
-        turretHeadingLeft = hardwareMap.get(Servo.class, "turretLeft");
+        turretHeadingRight = hardwareMap.get(Servo.class, "rightTurret");
+        turretHeadingLeft = hardwareMap.get(Servo.class, "leftTurret");
 
         // passes the follower into the instance of this class
         this.follower = follower;
