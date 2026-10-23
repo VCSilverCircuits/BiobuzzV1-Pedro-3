@@ -22,12 +22,13 @@ public class odoAim {
     private Pose scoringTargetPose;
 
     private double targetTurretHeading;
+    private double targetServoHeading;
 
     // TODO: set the maximum and minimum rotation range of the servos based on how they were configured in the servo programmer
     private final double MIN_SERVO_RADIANS = Math.toRadians(-250); // current range of the servos (NOT THE TURRET) are -175 to 175 degrees
     private final double MAX_SERVO_RADIANS = Math.toRadians(250);
 
-    private final double TURRET_GEAR_TO_SERVO_RATIO = 1/1; // TODO: replace 1/1 with (turret gear teeth) / (servo gear teeth)
+    private final double TURRET_GEAR_TO_SERVO_RATIO = 167.0 / 240.0; // TODO: replace 1/1 with (turret gear teeth) / (servo gear teeth)
 
     private boolean isManualMode; // TODO: add a manual mode toggle bound to second controller for backup if automatic tracking fails
 
@@ -41,19 +42,21 @@ public class odoAim {
     public odoAim(HardwareMap hardwareMap, Follower follower, AllianceColor allianceColor) {
 
         // changes tracked target depending on if we are on blue or red
-        this.audienceTargetPose = allianceColor == allianceColor.RED ? REDTARGETAUDIENCE : BLUETARGETAUDIENCE;
-        this.scoringTargetPose = allianceColor == allianceColor.RED ? REDTARGETSCORING : BLUETARGETSCORING;
+        this.audienceTargetPose = allianceColor == AllianceColor.RED ? REDTARGETAUDIENCE : BLUETARGETAUDIENCE;
+        this.scoringTargetPose = allianceColor == AllianceColor.RED ? REDTARGETSCORING : BLUETARGETSCORING;
 
         // hardware maps the turret heading servos
         turretHeadingRight = hardwareMap.get(Servo.class, "rightTurret");
         turretHeadingLeft = hardwareMap.get(Servo.class, "leftTurret");
+        turretHeadingRight.setDirection(Servo.Direction.REVERSE);
+        turretHeadingLeft.setDirection(Servo.Direction.REVERSE);
 
         // passes the follower into the instance of this class
         this.follower = follower;
     }
 
     // odoAim looped method
-    public void updateTurretHeading() {
+    public void update() {
         // changes the target to either the scoring side or the audience side depending on what side our robot is on
         this.targetPose = follower.pose().y() > 72 ? scoringTargetPose : audienceTargetPose;
 
@@ -68,40 +71,33 @@ public class odoAim {
         determines how far the turret needs to rotate to reach the target angle by subtracting how much
         the robot has currently rotated
          */
-        this.targetTurretHeading = robotRelativeTargetAngle - follower.pose().heading();
-
-        /* gets the normalized target turret heading and the absolute value of that to determine if
-        the target is within the set range that the hardware can safely reach
-         */
-        double normalizedTargetServoHeading = AngleUnit.normalizeRadians(targetTurretHeading / TURRET_GEAR_TO_SERVO_RATIO);
-        double absoluteNormalizedTargetServoHeading = Math.abs(normalizedTargetServoHeading);
+        this.targetTurretHeading = AngleUnit.normalizeRadians(robotRelativeTargetAngle - Math.toRadians(follower.pose().heading()));
+        this.targetServoHeading = this.targetTurretHeading / TURRET_GEAR_TO_SERVO_RATIO;
 
         // sets the servo rotation to the target angle and adjusts it to fit within the range if necessary
         if (!isManualMode) {
-            if (absoluteNormalizedTargetServoHeading <= MAX_SERVO_RADIANS - Math.toRadians(5)) {
-                turretHeadingRight.setPosition(normalizeToServoRotations(targetTurretHeading));
-                turretHeadingLeft.setPosition(normalizeToServoRotations(targetTurretHeading));
+            if (targetServoHeading <= MAX_SERVO_RADIANS && targetServoHeading >= MIN_SERVO_RADIANS) {
+                turretHeadingRight.setPosition(normalizeToServoRotations(targetServoHeading));
+                turretHeadingLeft.setPosition(normalizeToServoRotations(targetServoHeading));
 
-            } else if (normalizedTargetServoHeading >= MAX_SERVO_RADIANS - Math.toRadians(5)) {
-                turretHeadingRight.setPosition(normalizeToServoRotations(MAX_SERVO_RADIANS - Math.toRadians(5)));
-                turretHeadingLeft.setPosition(normalizeToServoRotations(MAX_SERVO_RADIANS - 5));
+            } else if (targetServoHeading > MAX_SERVO_RADIANS) {
+                turretHeadingRight.setPosition(normalizeToServoRotations(MAX_SERVO_RADIANS));
+                turretHeadingLeft.setPosition(normalizeToServoRotations(MAX_SERVO_RADIANS));
 
-            } else if (normalizedTargetServoHeading >= MIN_SERVO_RADIANS + Math.toRadians(5)) {
-                turretHeadingRight.setPosition(normalizeToServoRotations(MIN_SERVO_RADIANS + Math.toRadians(5)));
-                turretHeadingLeft.setPosition(normalizeToServoRotations(MIN_SERVO_RADIANS + Math.toRadians(5)));
+            } else if (targetServoHeading < MIN_SERVO_RADIANS) {
+                turretHeadingRight.setPosition(normalizeToServoRotations(MIN_SERVO_RADIANS));
+                turretHeadingLeft.setPosition(normalizeToServoRotations(MIN_SERVO_RADIANS));
             }
         }
     }
     public void auto() {
-        this.isManualMode = true;
+        this.isManualMode = false;
     }
     public void manual() {
-        this.isManualMode = false;
+        this.isManualMode = true;
     }
 
     public double normalizeToServoRotations(double radians) {
-        double servoAngle = AngleUnit.normalizeRadians(radians * TURRET_GEAR_TO_SERVO_RATIO);
-
-        return (servoAngle - MIN_SERVO_RADIANS) / (MAX_SERVO_RADIANS - MIN_SERVO_RADIANS);
+        return (radians - MIN_SERVO_RADIANS) / (MAX_SERVO_RADIANS - MIN_SERVO_RADIANS);
     }
 }

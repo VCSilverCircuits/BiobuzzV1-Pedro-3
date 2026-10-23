@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.vcsc.opmodes.teleOp;
 
 import com.bylazar.configurables.annotations.Configurable;
 import com.pedropathing.follower.Follower;
+import com.pedropathing.math.Pose;
 import com.pedropathing.utils.Timer;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
@@ -53,6 +54,8 @@ public class scrimTeleOp extends OpMode {
 
         if (PoseStorage.autoEnd != null) {
             follower.setPose(PoseStorage.autoEnd);
+        } else {
+            follower.setPose(new Pose(8, 134.8, 90));
         }
 
         flywheel.setDirection(DcMotorSimple.Direction.FORWARD);
@@ -93,7 +96,7 @@ public class scrimTeleOp extends OpMode {
         );
 
         follower.update();
-        OdoAim.updateTurretHeading();
+        OdoAim.update();
         // Driving ---------
 
         // Actions ---------

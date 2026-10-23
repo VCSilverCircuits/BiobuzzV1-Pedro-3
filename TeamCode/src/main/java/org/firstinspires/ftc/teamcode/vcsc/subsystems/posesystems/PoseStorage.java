@@ -9,6 +9,4 @@ public class PoseStorage {
     * */
     // End of auto robot position
     public static Pose autoEnd = null;
-    // End of auto turret rotation
-    public static double turretRadiansAutoEnd = 0.0;
 }
