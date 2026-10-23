@@ -24,8 +24,8 @@ public class odoAim {
     private double targetTurretHeading;
 
     // TODO: set the maximum and minimum rotation range of the servos based on how they were configured in the servo programmer
-    private final double MIN_SERVO_RADIANS = Math.toRadians(-175); // current range of the servos (NOT THE TURRET) are -175 to 175 degrees
-    private final double MAX_SERVO_RADIANS = Math.toRadians(175);
+    private final double MIN_SERVO_RADIANS = Math.toRadians(-250); // current range of the servos (NOT THE TURRET) are -175 to 175 degrees
+    private final double MAX_SERVO_RADIANS = Math.toRadians(250);
 
     private final double TURRET_GEAR_TO_SERVO_RATIO = 1/1; // TODO: replace 1/1 with (turret gear teeth) / (servo gear teeth)
 
@@ -78,17 +78,17 @@ public class odoAim {
 
         // sets the servo rotation to the target angle and adjusts it to fit within the range if necessary
         if (!isManualMode) {
-            if (absoluteNormalizedTargetServoHeading <= MAX_SERVO_RADIANS) {
+            if (absoluteNormalizedTargetServoHeading <= MAX_SERVO_RADIANS - Math.toRadians(5)) {
                 turretHeadingRight.setPosition(normalizeToServoRotations(targetTurretHeading));
                 turretHeadingLeft.setPosition(normalizeToServoRotations(targetTurretHeading));
 
-            } else if (normalizedTargetServoHeading > MAX_SERVO_RADIANS) {
-                turretHeadingRight.setPosition(normalizeToServoRotations(MAX_SERVO_RADIANS));
-                turretHeadingLeft.setPosition(normalizeToServoRotations(MAX_SERVO_RADIANS));
+            } else if (normalizedTargetServoHeading >= MAX_SERVO_RADIANS - Math.toRadians(5)) {
+                turretHeadingRight.setPosition(normalizeToServoRotations(MAX_SERVO_RADIANS - Math.toRadians(5)));
+                turretHeadingLeft.setPosition(normalizeToServoRotations(MAX_SERVO_RADIANS - 5));
 
-            } else {
-                turretHeadingRight.setPosition(normalizeToServoRotations(MIN_SERVO_RADIANS));
-                turretHeadingLeft.setPosition(normalizeToServoRotations(MIN_SERVO_RADIANS));
+            } else if (normalizedTargetServoHeading >= MIN_SERVO_RADIANS + Math.toRadians(5)) {
+                turretHeadingRight.setPosition(normalizeToServoRotations(MIN_SERVO_RADIANS + Math.toRadians(5)));
+                turretHeadingLeft.setPosition(normalizeToServoRotations(MIN_SERVO_RADIANS + Math.toRadians(5)));
             }
         }
     }
