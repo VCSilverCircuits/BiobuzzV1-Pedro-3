@@ -69,12 +69,14 @@ public class odoAim {
 
         /*
         determines how far the turret needs to rotate to reach the target angle by subtracting how much
-        the robot has currently rotated
+        the robot has currently rotated and normalizing it to be between -pi to pi (-180 to 180)
          */
         this.targetTurretHeading = AngleUnit.normalizeRadians(robotRelativeTargetAngle - Math.toRadians(follower.pose().heading()));
+
+        // converts target turret heading to the target servo heading by using the gear ratio of the turret to servo gears
         this.targetServoHeading = this.targetTurretHeading / TURRET_GEAR_TO_SERVO_RATIO;
 
-        // sets the servo rotation to the target angle and adjusts it to fit within the range if necessary
+        // sets the servo angle and prevents the servo from moving past its limits
         if (!isManualMode) {
             if (targetServoHeading <= MAX_SERVO_RADIANS && targetServoHeading >= MIN_SERVO_RADIANS) {
                 turretHeadingRight.setPosition(normalizeToServoRotations(targetServoHeading));
@@ -90,6 +92,8 @@ public class odoAim {
             }
         }
     }
+
+    // these two methods toggle manual turret aiming on and off (manual mode is not created yet)
     public void auto() {
         this.isManualMode = false;
     }
@@ -97,6 +101,7 @@ public class odoAim {
         this.isManualMode = true;
     }
 
+    // converts the degree angle to a scale of 0.0-1.0 to set the servo position
     public double normalizeToServoRotations(double radians) {
         return (radians - MIN_SERVO_RADIANS) / (MAX_SERVO_RADIANS - MIN_SERVO_RADIANS);
     }
