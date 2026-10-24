@@ -1,5 +1,8 @@
 package org.firstinspires.ftc.teamcode.vcsc.subsystems.turret;
 
+import org.firstinspires.ftc.robotcore.external.Telemetry;
+
+import com.bylazar.configurables.annotations.Configurable;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.math.Pose;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
@@ -10,23 +13,25 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.alliance.AllianceColor;
 
 // NOTE: I wrote most of this at 1AM, so the names of some variables may need to be changed to make more sense
-
+@Configurable
 public class odoAim {
     private Servo turretHeadingRight;
     private Servo turretHeadingLeft;
     private Follower follower;
     private Limelight3A limelight;
 
+    private Telemetry telemetry;
+
     private Pose targetPose;
     private Pose audienceTargetPose;
     private Pose scoringTargetPose;
 
-    private double targetTurretHeading;
-    private double targetServoHeading;
+    private double targetTurretHeading = 0;
+    private double targetServoHeading = 0;
 
     // TODO: set the maximum and minimum rotation range of the servos based on how they were configured in the servo programmer
-    private final double MIN_SERVO_RADIANS = Math.toRadians(-250); // current range of the servos (NOT THE TURRET) are -175 to 175 degrees
-    private final double MAX_SERVO_RADIANS = Math.toRadians(250);
+    private static double MIN_SERVO_RADIANS = Math.toRadians(-177.5); // current range of the servos (NOT THE TURRET) are -177.5 to 177.5 degrees
+    private static double MAX_SERVO_RADIANS = Math.toRadians(177.5);
 
     private final double TURRET_GEAR_TO_SERVO_RATIO = 167.0 / 240.0; // TODO: replace 1/1 with (turret gear teeth) / (servo gear teeth)
 
@@ -39,7 +44,8 @@ public class odoAim {
     final Pose BLUETARGETSCORING = new Pose(86,90);
 
     // odoAim initialization
-    public odoAim(HardwareMap hardwareMap, Follower follower, AllianceColor allianceColor) {
+    public odoAim(HardwareMap hardwareMap, Follower follower, AllianceColor allianceColor, Telemetry telemetry) {
+        this.telemetry = telemetry;
 
         // changes tracked target depending on if we are on blue or red
         this.audienceTargetPose = allianceColor == AllianceColor.RED ? REDTARGETAUDIENCE : BLUETARGETAUDIENCE;
@@ -53,16 +59,18 @@ public class odoAim {
 
         // passes the follower into the instance of this class
         this.follower = follower;
+        this.targetPose = this.follower.pose().y() > 72 ? scoringTargetPose : audienceTargetPose;
     }
 
     // odoAim looped method
     public void update() {
+        this.follower = follower;
         // changes the target to either the scoring side or the audience side depending on what side our robot is on
-        this.targetPose = follower.pose().y() > 72 ? scoringTargetPose : audienceTargetPose;
+        this.targetPose = this.follower.pose().y() > 72 ? scoringTargetPose : audienceTargetPose;
 
         // converts PedroPathing coordinates into robot relative coordinates
-        double robotRelativeTargetX = targetPose.x() - follower.pose().x();
-        double robotRelativeTargetY = targetPose.y() - follower.pose().y();
+        double robotRelativeTargetX = this.targetPose.x() - this.follower.pose().x();
+        double robotRelativeTargetY = this.targetPose.y() - this.follower.pose().y();
 
         // calculates the angle needed to rotate the turret to those coordinates
         double robotRelativeTargetAngle = Math.atan2(robotRelativeTargetY, robotRelativeTargetX);
@@ -71,25 +79,27 @@ public class odoAim {
         determines how far the turret needs to rotate to reach the target angle by subtracting how much
         the robot has currently rotated and normalizing it to be between -pi to pi (-180 to 180)
          */
-        this.targetTurretHeading = AngleUnit.normalizeRadians(robotRelativeTargetAngle - Math.toRadians(follower.pose().heading()));
+        this.targetTurretHeading = AngleUnit.normalizeRadians(
+                robotRelativeTargetAngle - this.follower.pose().heading()
+        );
 
         // converts target turret heading to the target servo heading by using the gear ratio of the turret to servo gears
-        this.targetServoHeading = this.targetTurretHeading / TURRET_GEAR_TO_SERVO_RATIO;
+        this.targetServoHeading = this.targetTurretHeading * TURRET_GEAR_TO_SERVO_RATIO;
 
         // sets the servo angle and prevents the servo from moving past its limits
         if (!isManualMode) {
-            if (targetServoHeading <= MAX_SERVO_RADIANS && targetServoHeading >= MIN_SERVO_RADIANS) {
-                turretHeadingRight.setPosition(normalizeToServoRotations(targetServoHeading));
-                turretHeadingLeft.setPosition(normalizeToServoRotations(targetServoHeading));
+            //if (this.targetServoHeading <= MAX_SERVO_RADIANS && this.targetServoHeading >= MIN_SERVO_RADIANS) {
+                turretHeadingRight.setPosition(normalizeToServoRotations(this.targetServoHeading));
+                turretHeadingLeft.setPosition(normalizeToServoRotations(this.targetServoHeading));
 
-            } else if (targetServoHeading > MAX_SERVO_RADIANS) {
+            /*} else if (this.targetServoHeading > MAX_SERVO_RADIANS) {
                 turretHeadingRight.setPosition(normalizeToServoRotations(MAX_SERVO_RADIANS));
                 turretHeadingLeft.setPosition(normalizeToServoRotations(MAX_SERVO_RADIANS));
 
-            } else if (targetServoHeading < MIN_SERVO_RADIANS) {
+            } else if (this.targetServoHeading < MIN_SERVO_RADIANS) {
                 turretHeadingRight.setPosition(normalizeToServoRotations(MIN_SERVO_RADIANS));
                 turretHeadingLeft.setPosition(normalizeToServoRotations(MIN_SERVO_RADIANS));
-            }
+            }*/
         }
     }
 
@@ -104,5 +114,24 @@ public class odoAim {
     // converts the degree angle to a scale of 0.0-1.0 to set the servo position
     public double normalizeToServoRotations(double radians) {
         return (radians - MIN_SERVO_RADIANS) / (MAX_SERVO_RADIANS - MIN_SERVO_RADIANS);
+    }
+    public void telemetry() {
+        telemetry.addData("Robot X", this.follower.pose().x());
+        telemetry.addData("Robot Y", this.follower.pose().y());
+
+        telemetry.addData("Target X", this.targetPose.x());
+        telemetry.addData("Target Y", this.targetPose.y());
+
+        telemetry.addData("dx", this.targetPose.x() - this.follower.pose().x());
+        telemetry.addData("dy", this.targetPose.y() - this.follower.pose().y());
+
+        telemetry.addData("Field Angle (deg)",
+                Math.toDegrees(Math.atan2(
+                        this.targetPose.y() - this.follower.pose().y(),
+                        this.targetPose.x() - this.follower.pose().x()
+                )));
+
+        telemetry.addData("Turret Target (deg)",
+                Math.toDegrees(this.targetTurretHeading));
     }
 }

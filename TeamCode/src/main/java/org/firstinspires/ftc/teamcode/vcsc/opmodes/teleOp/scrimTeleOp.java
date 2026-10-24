@@ -18,6 +18,7 @@ import org.firstinspires.ftc.teamcode.vcsc.external.goBildaPrism.GoBildaPrismDri
 import org.firstinspires.ftc.teamcode.vcsc.external.goBildaPrism.PrismAnimations;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.alliance.AllianceColor;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.alliance.currentAlliance;
+import org.firstinspires.ftc.teamcode.vcsc.subsystems.posesystems.PoseConstants;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.posesystems.PoseStorage;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.turret.odoAim;
 
@@ -49,14 +50,14 @@ public class scrimTeleOp extends OpMode {
         hardwareMap();
 
         follower = Constants.create(hardwareMap);
-        OdoAim = new odoAim(hardwareMap, follower, currentAlliance.allianceColor);
+        OdoAim = new odoAim(hardwareMap, follower, currentAlliance.allianceColor, telemetry);
         OdoAim.auto();
 
-        if (PoseStorage.autoEnd != null) {
+        /*if (PoseStorage.autoEnd != null) {
             follower.setPose(PoseStorage.autoEnd);
-        } else {
-            follower.setPose(new Pose(8, 134.8, 90));
-        }
+        } else {*/
+            follower.setPose(PoseConstants.p.of(6.8, 133.6, 270));
+
 
         flywheel.setDirection(DcMotorSimple.Direction.FORWARD);
         flywheel.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -97,6 +98,7 @@ public class scrimTeleOp extends OpMode {
 
         follower.update();
         OdoAim.update();
+        OdoAim.telemetry();
         // Driving ---------
 
         // Actions ---------
@@ -182,6 +184,7 @@ public class scrimTeleOp extends OpMode {
         telemetry.addData("Ramp Position", frontRamp.getPosition());
         telemetry.addData("Hood Angle", hoodAngle.getPosition());
         telemetry.addData("allience colro", currentAlliance.allianceColor);
+        telemetry.addData("Robot Heading", follower.pose().heading());
         // Telemetry ---------
     }
 

@@ -159,6 +159,7 @@ public class scrimAutoRed extends OpMode {
         telemetry.addData("Pose", follower.pose());
         telemetry.addData("isClose", isClose());
         telemetry.addData("isBusy", follower.isBusy());
+        telemetry.addData("RobotHeading", follower.pose().heading());
     }
 
     private Pose targetPose = new Pose(0,0,0);
