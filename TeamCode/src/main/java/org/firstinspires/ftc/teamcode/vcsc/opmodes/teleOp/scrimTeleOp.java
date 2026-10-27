@@ -99,6 +99,9 @@ public class scrimTeleOp extends OpMode {
         follower.update();
         OdoAim.update();
         OdoAim.telemetry();
+        /*double pos = 90.0 / 180.0;
+        turretRight.setPosition(0.5);
+        turretLeft.setPosition(0.);*/
         // Driving ---------
 
         // Actions ---------
@@ -188,6 +191,15 @@ public class scrimTeleOp extends OpMode {
         // Telemetry ---------
     }
 
+    @Override
+    public void stop() {
+        PrismAnimations.Snakes snakes = new PrismAnimations.Snakes(Color.GREEN);
+        snakes.setBrightness(75);
+        snakes.setSnakeLength(20);
+        snakes.setSpeed(0.1f);
+        ledStick.insertAndUpdateAnimation(GoBildaPrismDriver.LayerHeight.LAYER_0, snakes);
+    }
+
     public double rpmToTPS(double rpm) {
         final double TICKS_PER_REVOLUTION = 28.0;
         return (rpm * TICKS_PER_REVOLUTION) / 60;
@@ -203,8 +215,8 @@ public class scrimTeleOp extends OpMode {
     private DcMotorEx inner;
     private DcMotorEx flywheel;
 
-    /*private Servo turretRight;
-    private Servo turretLeft;*/
+    private Servo turretRight;
+    private Servo turretLeft;
     private Servo ballStop;
     private Servo frontRamp;
     private Servo hoodAngle;
@@ -221,8 +233,8 @@ public class scrimTeleOp extends OpMode {
         intake = hardwareMap.get(DcMotorEx.class, "intake");
         inner = hardwareMap.get(DcMotorEx.class, "inner");
 
-        /*turretRight = hardwareMap.get(Servo.class, "turretRight");
-        turretLeft = hardwareMap.get(Servo.class, "turretleft");*/
+        turretRight = hardwareMap.get(Servo.class, "rightTurret");
+        turretLeft = hardwareMap.get(Servo.class, "leftTurret");
         ballStop = hardwareMap.get(Servo.class, "ballStop");
         frontRamp = hardwareMap.get(Servo.class, "frontRamp");
         hoodAngle = hardwareMap.get(Servo.class, "hoodAngle");

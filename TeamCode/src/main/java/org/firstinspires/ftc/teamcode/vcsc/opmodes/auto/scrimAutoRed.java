@@ -21,6 +21,11 @@ import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.pedropathing.follower.Follower;
 import org.firstinspires.ftc.teamcode.pedro.Constants;
+import org.firstinspires.ftc.teamcode.vcsc.external.goBildaPrism.Color;
+import org.firstinspires.ftc.teamcode.vcsc.external.goBildaPrism.GoBildaPrismDriver;
+import org.firstinspires.ftc.teamcode.vcsc.external.goBildaPrism.PrismAnimations;
+import org.firstinspires.ftc.teamcode.vcsc.subsystems.alliance.AllianceColor;
+import org.firstinspires.ftc.teamcode.vcsc.subsystems.alliance.currentAlliance;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.posesystems.PoseConstants;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.posesystems.PoseStorage;
 
@@ -41,7 +46,7 @@ public class scrimAutoRed extends OpMode {
     private Servo ballStop;
     private Servo frontRamp;
 
-    // private RevColorSensorV3 ledStick;
+    private GoBildaPrismDriver ledStick;
     private GoBildaPinpointDriver pinpointDriver;
 
     public void hardwareMap() {
@@ -58,7 +63,7 @@ public class scrimAutoRed extends OpMode {
         ballStop = hardwareMap.get(Servo.class, "ballStop");
         frontRamp = hardwareMap.get(Servo.class, "frontRamp");
 
-        // ledStick = hardwareMap.get(RevColorSensorV3.class, "ledStick");
+        ledStick = hardwareMap.get(GoBildaPrismDriver.class, "ledStick");
         pinpointDriver = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
 
         flywheel = hardwareMap.get(DcMotorEx.class, "scrimFlywheel");
@@ -119,6 +124,7 @@ public class scrimAutoRed extends OpMode {
     @Override
     public void init() {
         hardwareMap();
+        currentAlliance.allianceColor = AllianceColor.RED;
 
         follower = Constants.create(hardwareMap);
         // poses
@@ -133,6 +139,17 @@ public class scrimAutoRed extends OpMode {
         ballStop.setPosition(0.7);
 
         PoseStorage.autoEnd = PoseConstants.p.of(0,0,0);
+
+        PrismAnimations.Snakes snakes = new PrismAnimations.Snakes(Color.GREEN);
+        if (currentAlliance.allianceColor == AllianceColor.BLUE) {
+            snakes.setColors(Color.BLUE);
+        } else {
+            snakes.setColors(Color.RED);
+        }
+        snakes.setBrightness(75);
+        snakes.setSnakeLength(20);
+        snakes.setSpeed(0.1f);
+        ledStick.insertAndUpdateAnimation(GoBildaPrismDriver.LayerHeight.LAYER_0, snakes);
     }
 
     @Override
@@ -165,6 +182,7 @@ public class scrimAutoRed extends OpMode {
     private Pose targetPose = new Pose(0,0,0);
 
     public void updatePathState() {
+        // IVY and state machine
         switch (currentState) {
             case startFlywheel:
                 ballStop.setPosition(0.7);

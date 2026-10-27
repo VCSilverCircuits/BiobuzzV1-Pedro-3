@@ -38,10 +38,10 @@ public class odoAim {
     private boolean isManualMode; // TODO: add a manual mode toggle bound to second controller for backup if automatic tracking fails
 
     // the PedroPathing coordinates of each hive
-    final Pose REDTARGETAUDIENCE = new Pose(58, 54);
-    final Pose REDTARGETSCORING = new Pose(58,90);
-    final Pose BLUETARGETAUDIENCE = new Pose(86,54);
-    final Pose BLUETARGETSCORING = new Pose(86,90);
+    final Pose REDTARGETAUDIENCE = new Pose(58, 54); // red aud
+    final Pose REDTARGETSCORING = new Pose(58,90); // red sco
+    final Pose BLUETARGETAUDIENCE = new Pose(86,54); // blue aud
+    final Pose BLUETARGETSCORING = new Pose(86,90); // blue sco
 
     // odoAim initialization
     public odoAim(HardwareMap hardwareMap, Follower follower, AllianceColor allianceColor, Telemetry telemetry) {
@@ -88,18 +88,18 @@ public class odoAim {
 
         // sets the servo angle and prevents the servo from moving past its limits
         if (!isManualMode) {
-            //if (this.targetServoHeading <= MAX_SERVO_RADIANS && this.targetServoHeading >= MIN_SERVO_RADIANS) {
+            if (this.targetServoHeading <= MAX_SERVO_RADIANS && this.targetServoHeading >= MIN_SERVO_RADIANS) {
                 turretHeadingRight.setPosition(normalizeToServoRotations(this.targetServoHeading));
                 turretHeadingLeft.setPosition(normalizeToServoRotations(this.targetServoHeading));
 
-            /*} else if (this.targetServoHeading > MAX_SERVO_RADIANS) {
+            } else if (this.targetServoHeading > MAX_SERVO_RADIANS) {
                 turretHeadingRight.setPosition(normalizeToServoRotations(MAX_SERVO_RADIANS));
                 turretHeadingLeft.setPosition(normalizeToServoRotations(MAX_SERVO_RADIANS));
 
             } else if (this.targetServoHeading < MIN_SERVO_RADIANS) {
                 turretHeadingRight.setPosition(normalizeToServoRotations(MIN_SERVO_RADIANS));
                 turretHeadingLeft.setPosition(normalizeToServoRotations(MIN_SERVO_RADIANS));
-            }*/
+            }
         }
     }
 
@@ -115,6 +115,7 @@ public class odoAim {
     public double normalizeToServoRotations(double radians) {
         return (radians - MIN_SERVO_RADIANS) / (MAX_SERVO_RADIANS - MIN_SERVO_RADIANS);
     }
+
     public void telemetry() {
         telemetry.addData("Robot X", this.follower.pose().x());
         telemetry.addData("Robot Y", this.follower.pose().y());
