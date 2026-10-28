@@ -25,6 +25,7 @@ public class odoAim {
     private Pose targetPose;
     private Pose audienceTargetPose;
     private Pose scoringTargetPose;
+    private static double servoPos;
 
     private double targetTurretHeading = 0;
     private double targetServoHeading = 0;
@@ -77,9 +78,8 @@ public class odoAim {
         determines how far the turret needs to rotate to reach the target angle by subtracting how much
         the robot has currently rotated and normalizing it to be between -pi to pi (-180 to 180 degrees)
          */
-        this.targetTurretHeading = AngleUnit.normalizeRadians(
-                robotRelativeTargetAngle - this.follower.pose().heading()
-        );
+        this.targetTurretHeading = AngleUnit.normalizeRadians(robotRelativeTargetAngle - this.follower.pose().heading());
+
 
         // converts target turret heading to the target servo heading by using the gear ratio of the turret to servo gears
         this.targetServoHeading = this.targetTurretHeading * TURRET_GEAR_TO_SERVO_RATIO;
@@ -97,7 +97,11 @@ public class odoAim {
             } else if (this.targetServoHeading < MIN_SERVO_RADIANS) {
                 turretHeadingRight.setPosition(convertToServoRotations(MIN_SERVO_RADIANS));
                 turretHeadingLeft.setPosition(convertToServoRotations(MIN_SERVO_RADIANS));
-            }*/
+               }*/
+        } else {
+            servoPos = 0.5;
+            turretHeadingRight.setPosition(servoPos);
+            turretHeadingLeft.setPosition(servoPos);
         }
     }
 
@@ -111,7 +115,7 @@ public class odoAim {
 
     // converts the degree angle to a scale of 0.0-1.0 to set the servo position
     public double convertToServoRotations(double radians) {
-        return (radians - MIN_SERVO_RADIANS) / (MAX_SERVO_RADIANS - MIN_SERVO_RADIANS);
+        return ((radians - MIN_SERVO_RADIANS) / (MAX_SERVO_RADIANS - MIN_SERVO_RADIANS)) % 1;
     }
 
     public void telemetry() {

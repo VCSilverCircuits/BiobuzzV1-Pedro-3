@@ -35,6 +35,9 @@ public class scrimTeleOp extends OpMode {
     private boolean rampToggle;
     private boolean rampWasLastPressed;
 
+    private boolean aimWasLastPressed;
+    private boolean odoAimToggle;
+
     private static double servoPos = 0;
 
     // Flywheel PIDF and other setup
@@ -52,8 +55,8 @@ public class scrimTeleOp extends OpMode {
         hardwareMap();
 
         follower = Constants.create(hardwareMap);
-        OdoAim = new odoAim(hardwareMap, follower, currentAlliance.allianceColor, telemetry);
-        OdoAim.auto();
+        //OdoAim = new odoAim(hardwareMap, follower, currentAlliance.allianceColor, telemetry);
+        //OdoAim.auto();
 
         /*if (PoseStorage.autoEnd != null) {
             follower.setPose(PoseStorage.autoEnd);
@@ -86,6 +89,9 @@ public class scrimTeleOp extends OpMode {
         hoodAngle.setPosition(0.38);
         rampWasLastPressed = false;
         rampToggle = false;
+        odoAimToggle = false;
+        aimWasLastPressed = false;
+
     }
 
     @Override
@@ -99,11 +105,11 @@ public class scrimTeleOp extends OpMode {
         );
 
         follower.update();
-        OdoAim.update();
-        OdoAim.telemetry();
+        //OdoAim.update();
+        //OdoAim.telemetry();
         //double pos = 90.0 / 180.0;
-        //turretRight.setPosition(servoPos);
-        //turretLeft.setPosition(servoPos);
+        turretRight.setPosition(servoPos);
+        turretLeft.setPosition(servoPos);
         // Driving ---------
 
         // Actions ---------
@@ -179,6 +185,16 @@ public class scrimTeleOp extends OpMode {
             frontRamp.setPosition(0.4);
         } else {
             frontRamp.setPosition(1);
+        }
+
+        if (gamepad1.dpad_up && !aimWasLastPressed) {
+            odoAimToggle = !odoAimToggle;
+        }
+        aimWasLastPressed = gamepad1.dpad_up;
+        if (odoAimToggle) {
+            //OdoAim.manual();
+        } else {
+            //OdoAim.auto();
         }
         // Controls ---------
 
