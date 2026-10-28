@@ -35,6 +35,8 @@ public class scrimTeleOp extends OpMode {
     private boolean rampToggle;
     private boolean rampWasLastPressed;
 
+    private static double servoPos = 0;
+
     // Flywheel PIDF and other setup
     PIDFCoefficients flywheelPIDF = new PIDFCoefficients(p, i, d, f);
     public static double p = 36;
@@ -99,9 +101,9 @@ public class scrimTeleOp extends OpMode {
         follower.update();
         OdoAim.update();
         OdoAim.telemetry();
-        /*double pos = 90.0 / 180.0;
-        turretRight.setPosition(0.5);
-        turretLeft.setPosition(0.);*/
+        //double pos = 90.0 / 180.0;
+        //turretRight.setPosition(servoPos);
+        //turretLeft.setPosition(servoPos);
         // Driving ---------
 
         // Actions ---------

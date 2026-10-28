@@ -28,8 +28,6 @@ public class odoAim {
 
     private double targetTurretHeading = 0;
     private double targetServoHeading = 0;
-
-    // TODO: set the maximum and minimum rotation range of the servos based on how they were configured in the servo programmer
     private static double MIN_SERVO_RADIANS = Math.toRadians(-177.5); // current range of the servos (NOT THE TURRET) are -177.5 to 177.5 degrees
     private static double MAX_SERVO_RADIANS = Math.toRadians(177.5);
 
@@ -77,7 +75,7 @@ public class odoAim {
 
         /*
         determines how far the turret needs to rotate to reach the target angle by subtracting how much
-        the robot has currently rotated and normalizing it to be between -pi to pi (-180 to 180)
+        the robot has currently rotated and normalizing it to be between -pi to pi (-180 to 180 degrees)
          */
         this.targetTurretHeading = AngleUnit.normalizeRadians(
                 robotRelativeTargetAngle - this.follower.pose().heading()
@@ -88,18 +86,18 @@ public class odoAim {
 
         // sets the servo angle and prevents the servo from moving past its limits
         if (!isManualMode) {
-            if (this.targetServoHeading <= MAX_SERVO_RADIANS && this.targetServoHeading >= MIN_SERVO_RADIANS) {
-                turretHeadingRight.setPosition(normalizeToServoRotations(this.targetServoHeading));
-                turretHeadingLeft.setPosition(normalizeToServoRotations(this.targetServoHeading));
+            //if (this.targetServoHeading <= MAX_SERVO_RADIANS && this.targetServoHeading >= MIN_SERVO_RADIANS) {
+                turretHeadingRight.setPosition(convertToServoRotations(this.targetServoHeading));
+                turretHeadingLeft.setPosition(convertToServoRotations(this.targetServoHeading));
 
-            } else if (this.targetServoHeading > MAX_SERVO_RADIANS) {
-                turretHeadingRight.setPosition(normalizeToServoRotations(MAX_SERVO_RADIANS));
-                turretHeadingLeft.setPosition(normalizeToServoRotations(MAX_SERVO_RADIANS));
+            /*} else if (this.targetServoHeading > MAX_SERVO_RADIANS) {
+                turretHeadingRight.setPosition(convertToServoRotations(MAX_SERVO_RADIANS));
+                turretHeadingLeft.setPosition(convertToServoRotations(MAX_SERVO_RADIANS));
 
             } else if (this.targetServoHeading < MIN_SERVO_RADIANS) {
-                turretHeadingRight.setPosition(normalizeToServoRotations(MIN_SERVO_RADIANS));
-                turretHeadingLeft.setPosition(normalizeToServoRotations(MIN_SERVO_RADIANS));
-            }
+                turretHeadingRight.setPosition(convertToServoRotations(MIN_SERVO_RADIANS));
+                turretHeadingLeft.setPosition(convertToServoRotations(MIN_SERVO_RADIANS));
+            }*/
         }
     }
 
@@ -112,7 +110,7 @@ public class odoAim {
     }
 
     // converts the degree angle to a scale of 0.0-1.0 to set the servo position
-    public double normalizeToServoRotations(double radians) {
+    public double convertToServoRotations(double radians) {
         return (radians - MIN_SERVO_RADIANS) / (MAX_SERVO_RADIANS - MIN_SERVO_RADIANS);
     }
 
