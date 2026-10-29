@@ -53,8 +53,8 @@ public class odoAim {
         this.motorEncoder = motorEncoder;
 
         // changes tracked target depending on if we are on blue or red
-        this.audienceTargetPose = allianceColor == AllianceColor.RED ? REDTARGETAUDIENCE : BLUETARGETAUDIENCE;
-        this.scoringTargetPose = allianceColor == AllianceColor.RED ? REDTARGETSCORING : BLUETARGETSCORING;
+        this.audienceTargetPose = (allianceColor == AllianceColor.RED) ? REDTARGETAUDIENCE : BLUETARGETAUDIENCE;
+        this.scoringTargetPose = (allianceColor == AllianceColor.RED) ? REDTARGETSCORING : BLUETARGETSCORING;
 
         // hardware maps the turret heading servos
         turretHeadingRight = hardwareMap.get(Servo.class, "rightTurret");
@@ -120,7 +120,7 @@ public class odoAim {
 
     // converts the degree angle to a scale of 0.0-1.0 to set the servo position
     public double convertToServoRotations(double radians) {
-        return ((radians - MIN_SERVO_RADIANS) / (MAX_SERVO_RADIANS - MIN_SERVO_RADIANS)) % 1;
+        return ((radians - MIN_SERVO_RADIANS) / (MAX_SERVO_RADIANS - MIN_SERVO_RADIANS));
     }
 
     // Maybe use to check if servo actually moved and see if the servo is now off
@@ -148,7 +148,10 @@ public class odoAim {
                         this.targetPose.x() - this.follower.pose().x()
                 )));
 
-        telemetry.addData("Turret Target (deg)",
-                Math.toDegrees(this.targetTurretHeading));
+        telemetry.addData("Turret Target (deg)", Math.toDegrees(this.targetTurretHeading));
+        telemetry.addData("Servo Target (deg)", Math.toDegrees(targetServoHeading));
+
+        telemetry.addData("Left Servo Position", turretHeadingLeft.getPosition());
+        telemetry.addData("Right Servo Position", turretHeadingRight.getPosition());
     }
 }
