@@ -2,7 +2,6 @@ package org.firstinspires.ftc.teamcode.vcsc.opmodes.teleOp;
 
 import com.bylazar.configurables.annotations.Configurable;
 import com.pedropathing.follower.Follower;
-import com.pedropathing.math.Pose;
 import com.pedropathing.utils.Timer;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
@@ -19,7 +18,6 @@ import org.firstinspires.ftc.teamcode.vcsc.external.goBildaPrism.PrismAnimations
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.alliance.AllianceColor;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.alliance.currentAlliance;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.posesystems.PoseConstants;
-import org.firstinspires.ftc.teamcode.vcsc.subsystems.posesystems.PoseStorage;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.turret.odoAim;
 
 @Configurable
@@ -55,7 +53,7 @@ public class scrimTeleOp extends OpMode {
         hardwareMap();
 
         follower = Constants.create(hardwareMap);
-        //OdoAim = new odoAim(hardwareMap, follower, currentAlliance.allianceColor, telemetry);
+        //OdoAim = new odoAim(hardwareMap, follower, currentAlliance.allianceColor, intake, telemetry);
         //OdoAim.auto();
 
         /*if (PoseStorage.autoEnd != null) {
@@ -68,7 +66,7 @@ public class scrimTeleOp extends OpMode {
         flywheel.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         flywheel.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, flywheelPIDF);
 
-        currentActionB = TeleActions.INTAKING;
+        currentActionB = TeleActions.IDLE;
         previousActionB = null;
 
         PrismAnimations.Snakes snakes = new PrismAnimations.Snakes(Color.GREEN);
@@ -92,6 +90,11 @@ public class scrimTeleOp extends OpMode {
         odoAimToggle = false;
         aimWasLastPressed = false;
 
+        Timer waitSecondBeforeStart = new Timer();
+
+        if (waitSecondBeforeStart.seconds() >= 1) {
+            currentActionB = TeleActions.INTAKING;
+        }
     }
 
     @Override
@@ -108,8 +111,8 @@ public class scrimTeleOp extends OpMode {
         //OdoAim.update();
         //OdoAim.telemetry();
         //double pos = 90.0 / 180.0;
-        turretRight.setPosition(servoPos);
-        turretLeft.setPosition(servoPos);
+        //turretRight.setPosition(servoPos);
+        //turretLeft.setPosition(servoPos);
         // Driving ---------
 
         // Actions ---------
@@ -137,6 +140,12 @@ public class scrimTeleOp extends OpMode {
                 if (shootIntakeTimer.seconds() > 1) {
                     intake.setPower(0);
                 }
+                break;
+            case IDLE:
+                ballStop.setPosition(0.7);
+
+                intake.setPower(0);
+                inner.setPower(0);
                 break;
         }
         // Actions ---------

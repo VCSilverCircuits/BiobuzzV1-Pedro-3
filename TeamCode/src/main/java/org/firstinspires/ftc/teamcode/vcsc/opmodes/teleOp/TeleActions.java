@@ -4,4 +4,5 @@ public enum TeleActions {
     INTAKING,
     BACKSPIN,
     SHOOTING,
+    IDLE
 }

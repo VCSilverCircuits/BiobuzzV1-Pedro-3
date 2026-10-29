@@ -1,14 +1,18 @@
 package org.firstinspires.ftc.teamcode.vcsc.subsystems.turret;
 
-import org.firstinspires.ftc.robotcore.external.Telemetry;
-
 import com.bylazar.configurables.annotations.Configurable;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.math.Pose;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.ServoController;
+import com.qualcomm.robotcore.hardware.ServoControllerEx;
+import com.qualcomm.robotcore.hardware.ServoImpl;
+import com.qualcomm.robotcore.hardware.ServoImplEx;
 
+import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.alliance.AllianceColor;
 
@@ -19,6 +23,7 @@ public class odoAim {
     private Servo turretHeadingLeft;
     private Follower follower;
     private Limelight3A limelight;
+    private DcMotorEx motorEncoder; // Encoder connected to motor port for tracking turret
 
     private Telemetry telemetry;
 
@@ -43,8 +48,9 @@ public class odoAim {
     final Pose BLUETARGETSCORING = new Pose(86,90); // blue sco
 
     // odoAim initialization
-    public odoAim(HardwareMap hardwareMap, Follower follower, AllianceColor allianceColor, Telemetry telemetry) {
+    public odoAim(HardwareMap hardwareMap, Follower follower, AllianceColor allianceColor, DcMotorEx motorEncoder, Telemetry telemetry) {
         this.telemetry = telemetry;
+        this.motorEncoder = motorEncoder;
 
         // changes tracked target depending on if we are on blue or red
         this.audienceTargetPose = allianceColor == AllianceColor.RED ? REDTARGETAUDIENCE : BLUETARGETAUDIENCE;
@@ -79,7 +85,6 @@ public class odoAim {
         the robot has currently rotated and normalizing it to be between -pi to pi (-180 to 180 degrees)
          */
         this.targetTurretHeading = AngleUnit.normalizeRadians(robotRelativeTargetAngle - this.follower.pose().heading());
-
 
         // converts target turret heading to the target servo heading by using the gear ratio of the turret to servo gears
         this.targetServoHeading = this.targetTurretHeading * TURRET_GEAR_TO_SERVO_RATIO;
@@ -118,7 +123,16 @@ public class odoAim {
         return ((radians - MIN_SERVO_RADIANS) / (MAX_SERVO_RADIANS - MIN_SERVO_RADIANS)) % 1;
     }
 
+    // Maybe use to check if servo actually moved and see if the servo is now off
+    public double motorEncoderToServoRadians() {
+        double tpr = 8192.0;
+        int currentTicks = motorEncoder.getCurrentPosition();
+        return (currentTicks / tpr) * (2 * Math.PI);
+    }
+
     public void telemetry() {
+        telemetry.addData("Radians From Encoder", motorEncoderToServoRadians());
+
         telemetry.addData("Robot X", this.follower.pose().x());
         telemetry.addData("Robot Y", this.follower.pose().y());
 
