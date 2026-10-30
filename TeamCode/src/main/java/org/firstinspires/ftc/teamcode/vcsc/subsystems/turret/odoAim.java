@@ -15,6 +15,7 @@ import com.qualcomm.robotcore.hardware.ServoImplEx;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.alliance.AllianceColor;
+import com.qualcomm.robotcore.hardware.PwmControl;
 
 // NOTE: I wrote most of this at 1AM, so the names of some variables may need to be changed to make more sense
 @Configurable
@@ -34,10 +35,10 @@ public class odoAim {
 
     private double targetTurretHeading = 0;
     private double targetServoHeading = 0;
-    private static double MIN_SERVO_RADIANS = Math.toRadians(-177.5); // current range of the servos (NOT THE TURRET) are -177.5 to 177.5 degrees
-    private static double MAX_SERVO_RADIANS = Math.toRadians(177.5);
+    private static double MIN_SERVO_RADIANS = -2.65; // current range of the servos (NOT THE TURRET) are -177.5 to 177.5 degrees
+    private static double MAX_SERVO_RADIANS = 2.65;
 
-    private final double TURRET_GEAR_TO_SERVO_RATIO = 167.0 / 240.0; // TODO: replace 1/1 with (turret gear teeth) / (servo gear teeth)
+    private static double TURRET_GEAR_TO_SERVO_RATIO = 167.0 / 240.0; // TODO: replace 1/1 with (turret gear teeth) / (servo gear teeth)
 
     private boolean isManualMode; // TODO: add a manual mode toggle bound to second controller for backup if automatic tracking fails
 
@@ -56,11 +57,14 @@ public class odoAim {
         this.audienceTargetPose = (allianceColor == AllianceColor.RED) ? REDTARGETAUDIENCE : BLUETARGETAUDIENCE;
         this.scoringTargetPose = (allianceColor == AllianceColor.RED) ? REDTARGETSCORING : BLUETARGETSCORING;
 
-        // hardware maps the turret heading servos
         turretHeadingRight = hardwareMap.get(Servo.class, "rightTurret");
         turretHeadingLeft = hardwareMap.get(Servo.class, "leftTurret");
-        turretHeadingRight.setDirection(Servo.Direction.REVERSE);
+
         turretHeadingLeft.setDirection(Servo.Direction.REVERSE);
+        turretHeadingRight.setDirection(Servo.Direction.REVERSE);
+
+        turretHeadingRight.scaleRange(0.01, 0.99);
+        turretHeadingLeft.scaleRange(0.01, 0.99);
 
         // passes the follower into the instance of this class
         this.follower = follower;
@@ -92,9 +96,10 @@ public class odoAim {
         // sets the servo angle and prevents the servo from moving past its limits
         if (!isManualMode) {
             //if (this.targetServoHeading <= MAX_SERVO_RADIANS && this.targetServoHeading >= MIN_SERVO_RADIANS) {
+            if (Math.abs(turretHeadingRight.getPosition() - convertToServoRotations(targetTurretHeading)) > 0.01) {
                 turretHeadingRight.setPosition(convertToServoRotations(this.targetServoHeading));
                 turretHeadingLeft.setPosition(convertToServoRotations(this.targetServoHeading));
-
+            }
             /*} else if (this.targetServoHeading > MAX_SERVO_RADIANS) {
                 turretHeadingRight.setPosition(convertToServoRotations(MAX_SERVO_RADIANS));
                 turretHeadingLeft.setPosition(convertToServoRotations(MAX_SERVO_RADIANS));
@@ -120,18 +125,11 @@ public class odoAim {
 
     // converts the degree angle to a scale of 0.0-1.0 to set the servo position
     public double convertToServoRotations(double radians) {
-        return ((radians - MIN_SERVO_RADIANS) / (MAX_SERVO_RADIANS - MIN_SERVO_RADIANS));
-    }
-
-    // Maybe use to check if servo actually moved and see if the servo is now off
-    public double motorEncoderToServoRadians() {
-        double tpr = 8192.0;
-        int currentTicks = motorEncoder.getCurrentPosition();
-        return (currentTicks / tpr) * (2 * Math.PI);
+        double servoRot = ((radians - MIN_SERVO_RADIANS) / (MAX_SERVO_RADIANS - MIN_SERVO_RADIANS));
+        return Math.max(0.0, Math.min(1.0, servoRot));
     }
 
     public void telemetry() {
-        telemetry.addData("Radians From Encoder", motorEncoderToServoRadians());
 
         telemetry.addData("Robot X", this.follower.pose().x());
         telemetry.addData("Robot Y", this.follower.pose().y());

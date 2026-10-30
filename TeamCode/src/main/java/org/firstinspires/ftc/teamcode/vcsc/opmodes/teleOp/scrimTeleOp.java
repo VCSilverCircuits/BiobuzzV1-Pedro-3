@@ -18,6 +18,7 @@ import org.firstinspires.ftc.teamcode.vcsc.external.goBildaPrism.PrismAnimations
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.alliance.AllianceColor;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.alliance.currentAlliance;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.posesystems.PoseConstants;
+import org.firstinspires.ftc.teamcode.vcsc.subsystems.posesystems.PoseStorage;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.turret.odoAim;
 
 @Configurable
@@ -36,7 +37,12 @@ public class scrimTeleOp extends OpMode {
     private boolean aimWasLastPressed;
     private boolean odoAimToggle;
 
-    private static double servoPos = 0;
+    private boolean recalLastPressed;
+
+    private boolean backspinLastPressed;
+
+    Timer waitSecondBeforeStart = new Timer();
+    private static double servoPos = 0.5;
 
     // Flywheel PIDF and other setup
     PIDFCoefficients flywheelPIDF = new PIDFCoefficients(p, i, d, f);
@@ -44,7 +50,7 @@ public class scrimTeleOp extends OpMode {
     public static double i = 1;
     public static double d = 28.5;
     public static double f = 20;
-    public static double flywheelRPM = 2390;
+    private static double flywheelRPM = 2390;
 
     public static double hoodAngleTemp = 0.38;
 
@@ -53,14 +59,14 @@ public class scrimTeleOp extends OpMode {
         hardwareMap();
 
         follower = Constants.create(hardwareMap);
-        //OdoAim = new odoAim(hardwareMap, follower, currentAlliance.allianceColor, intake, telemetry);
-        //OdoAim.auto();
+        OdoAim = new odoAim(hardwareMap, follower, currentAlliance.allianceColor, intake, telemetry);
+        OdoAim.auto();
 
-        /*if (PoseStorage.autoEnd != null) {
+        if (PoseStorage.autoEnd != null) {
             follower.setPose(PoseStorage.autoEnd);
-        } else {*/
-            follower.setPose(PoseConstants.p.of(6.8, 133.6, 270));
-
+        } else {
+            follower.setPose(PoseConstants.p.of(58, 8, 90));
+        }
 
         flywheel.setDirection(DcMotorSimple.Direction.FORWARD);
         flywheel.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -89,12 +95,9 @@ public class scrimTeleOp extends OpMode {
         rampToggle = false;
         odoAimToggle = false;
         aimWasLastPressed = false;
+        recalLastPressed = false;
+        waitSecondBeforeStart.reset();
 
-        Timer waitSecondBeforeStart = new Timer();
-
-        if (waitSecondBeforeStart.seconds() >= 1) {
-            currentActionB = TeleActions.INTAKING;
-        }
     }
 
     @Override
@@ -108,11 +111,13 @@ public class scrimTeleOp extends OpMode {
         );
 
         follower.update();
-        //OdoAim.update();
-        //OdoAim.telemetry();
+        OdoAim.update();
+        OdoAim.telemetry();
         //double pos = 90.0 / 180.0;
         //turretRight.setPosition(servoPos);
         //turretLeft.setPosition(servoPos);
+
+
         // Driving ---------
 
         // Actions ---------
@@ -149,7 +154,7 @@ public class scrimTeleOp extends OpMode {
                 break;
         }
         // Actions ---------
-
+        double flywheelRPM = 2390;
         // Turn on flywheel velocity on start
         flywheel.setVelocity(rpmToTPS(flywheelRPM));
         flywheelPIDF.p = p;
@@ -158,12 +163,10 @@ public class scrimTeleOp extends OpMode {
         flywheelPIDF.f = f;
 
         // Controls ---------
-        if (gamepad1.right_bumper) {
-            currentActionB = TeleActions.INTAKING;
-        }
-
         if (gamepad1.left_bumper) {
             currentActionB = TeleActions.BACKSPIN;
+        } else if (waitSecondBeforeStart.seconds() > 2) {
+            currentActionB = TeleActions.INTAKING;
         }
 
         if (gamepad1.right_trigger > 0.56) {
@@ -201,10 +204,15 @@ public class scrimTeleOp extends OpMode {
         }
         aimWasLastPressed = gamepad1.dpad_up;
         if (odoAimToggle) {
-            //OdoAim.manual();
+            OdoAim.manual();
         } else {
-            //OdoAim.auto();
+            OdoAim.auto();
         }
+
+        if (gamepad1.dpad_down && !recalLastPressed) {
+            follower.setPose(PoseConstants.p.of(6.9, 58, 270));
+        }
+        recalLastPressed = gamepad1.dpad_down;
         // Controls ---------
 
         // Telemetry ---------
@@ -242,8 +250,8 @@ public class scrimTeleOp extends OpMode {
     private DcMotorEx inner;
     private DcMotorEx flywheel;
 
-    private Servo turretRight;
-    private Servo turretLeft;
+    //private Servo turretRight;
+    //private Servo turretLeft;
     private Servo ballStop;
     private Servo frontRamp;
     private Servo hoodAngle;
@@ -260,8 +268,8 @@ public class scrimTeleOp extends OpMode {
         intake = hardwareMap.get(DcMotorEx.class, "intake");
         inner = hardwareMap.get(DcMotorEx.class, "inner");
 
-        turretRight = hardwareMap.get(Servo.class, "rightTurret");
-        turretLeft = hardwareMap.get(Servo.class, "leftTurret");
+        //turretRight = hardwareMap.get(Servo.class, "rightTurret");
+        //turretLeft = hardwareMap.get(Servo.class, "leftTurret");
         ballStop = hardwareMap.get(Servo.class, "ballStop");
         frontRamp = hardwareMap.get(Servo.class, "frontRamp");
         hoodAngle = hardwareMap.get(Servo.class, "hoodAngle");
