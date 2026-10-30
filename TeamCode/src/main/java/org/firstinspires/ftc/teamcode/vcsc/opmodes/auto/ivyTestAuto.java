@@ -15,8 +15,10 @@ import static com.pedropathing.ivy.pedro.PedroCommands.follow;
 import org.firstinspires.ftc.teamcode.pedro.Constants;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 @Autonomous
+
 public class ivyTestAuto extends LinearOpMode {
     private Follower follower;
 
@@ -25,9 +27,9 @@ public class ivyTestAuto extends LinearOpMode {
     private final Pose start = poseFactory.of(58, 8, 90);
     private final Pose path1 = poseFactory.of(49.3661, 15.8204, 180);
     private final Pose point2Start = poseFactory.of(49.3661, 15.8204, 180);
-    private final Pose point2 = poseFactory.of(8.5, 7, 180);
-    private final Pose point2Control1 = poseFactory.of(45.6209, 6.1779, 0);
-    private final Pose point3Start = poseFactory.of(8.5, 7, 180);
+    private final Pose point2 = poseFactory.of(8.5, 8, 180);
+    private final Pose point2Control1 = poseFactory.of(45.6209, 8, 0);
+    private final Pose point3Start = poseFactory.of(8.5, 9, 180);
     private final Pose point3 = poseFactory.of(28.1865, 49.9137, 180);
     private final Pose point4Start = poseFactory.of(28.1865, 49.9137, 90);
     private final Pose point4 = poseFactory.of(10.4471, 91.1985, 90);

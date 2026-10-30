@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.vcsc.subsystems.turret;
 
+import static org.firstinspires.ftc.teamcode.vcsc.subsystems.Shared.rpmToTPS;
+
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 
@@ -31,10 +33,5 @@ public class hoodAngling {
 
     private void setFlywheelRPM(double rpm, DcMotorEx flywheel) {
         flywheel.setVelocity(rpmToTPS(rpm));
-    }
-
-    private double rpmToTPS(double rpm) {
-        final double TICKS_PER_REVOLUTION = 28.0;
-        return (rpm * TICKS_PER_REVOLUTION) / 60;
     }
 }

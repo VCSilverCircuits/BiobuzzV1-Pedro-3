@@ -1,36 +1,28 @@
 package org.firstinspires.ftc.teamcode.vcsc.opmodes.auto;
 
-import static com.pedropathing.ivy.commands.Commands.waitMs;
-import static com.pedropathing.ivy.groups.Groups.sequential;
-import static com.pedropathing.ivy.pedro.PedroCommands.follow;
+import static org.firstinspires.ftc.teamcode.vcsc.subsystems.Shared.SnakeColors;
+import static org.firstinspires.ftc.teamcode.vcsc.subsystems.Shared.rpmToTPS;
 
 import com.pedropathing.api.Paths;
-import com.pedropathing.ivy.Command;
-import com.pedropathing.ivy.Scheduler;
-import com.pedropathing.ivy.behaviors.EndCondition;
 import com.pedropathing.math.Pose;
 import com.pedropathing.paths.Path;
 import com.pedropathing.utils.Timer;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
-import com.qualcomm.hardware.rev.RevColorSensorV3;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.pedropathing.follower.Follower;
 import org.firstinspires.ftc.teamcode.pedro.Constants;
-import org.firstinspires.ftc.teamcode.vcsc.external.goBildaPrism.Color;
 import org.firstinspires.ftc.teamcode.vcsc.external.goBildaPrism.GoBildaPrismDriver;
-import org.firstinspires.ftc.teamcode.vcsc.external.goBildaPrism.PrismAnimations;
-import org.firstinspires.ftc.teamcode.vcsc.subsystems.alliance.AllianceColor;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.alliance.currentAlliance;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.posesystems.PoseConstants;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.posesystems.PoseStorage;
+import org.firstinspires.ftc.teamcode.vcsc.subsystems.turret.odoAim;
 
-@Autonomous(name = "scrimAutoRed", preselectTeleOp = "scrimTeleOpBlue")
-public class scrimAutoRed extends OpMode {
+// temp shared auto
+public class Auto extends OpMode {
     // MAPPINGS ------------------------
     private DcMotorEx frontRight;
     private DcMotorEx frontLeft;
@@ -71,6 +63,7 @@ public class scrimAutoRed extends OpMode {
     // MAPPINGS ------------------------
 
     private Follower follower;
+    private odoAim OdoAim;
 
     private enum AllStates {
         startFlywheel,
@@ -86,20 +79,21 @@ public class scrimAutoRed extends OpMode {
     private AllStates currentState;
 
     private Timer pathTimer;
+    private Timer matchTimer;
 
     PIDFCoefficients flywheelPIDF = new PIDFCoefficients(p, i, d, f);
     public static double p = 36;
     public static double i = 1;
     public static double d = 28.5;
     public static double f = 20;
-    public static double flywheelRPM = 2450;
+    private static double flywheelRPM = 2390;
 
     private final Pose start = PoseConstants.p.of(58, 8, 90);
     private final Pose path1 = PoseConstants.p.of(49.3661, 15.8204, 180);
     private final Pose point2Start = PoseConstants.p.of(49.3661, 15.8204, 180);
-    private final Pose point2 = PoseConstants.p.of(8.5, 7, 180);
-    private final Pose point2Control1 = PoseConstants.p.of(45.6209, 6.1779, 0);
-    private final Pose point3Start = PoseConstants.p.of(8.5, 7, 180);
+    private final Pose point2 = PoseConstants.p.of(8.5, 8.5, 180);
+    private final Pose point2Control1 = PoseConstants.p.of(45.6209, 8.5, 0);
+    private final Pose point3Start = PoseConstants.p.of(8.5, 8.5, 180);
     private final Pose point3 = PoseConstants.p.of(28.1865, 49.9137, 180);
     private final Pose point4Start = PoseConstants.p.of(28.1865, 49.9137, 180);
     private final Pose point4 = PoseConstants.p.of(10.4471, 95.1985, 90);
@@ -117,55 +111,45 @@ public class scrimAutoRed extends OpMode {
     }
 
     public Path fullParking() {
-        //return Paths.line(point4Start, point4).linear(point4Start, point4);
         return Paths.line(point4Start, point4).linear(point4Start, point4);
     }
 
     @Override
     public void init() {
         hardwareMap();
-        currentAlliance.allianceColor = AllianceColor.RED;
-
         follower = Constants.create(hardwareMap);
-        // poses
-        // RED -
-        // BLUE -
         follower.setPose(PoseConstants.p.of(58,8,90));
 
+        OdoAim = new odoAim(hardwareMap, follower, currentAlliance.allianceColor, intake, telemetry);
+        OdoAim.manual();
+
         pathTimer = new Timer();
+        matchTimer = new Timer();
 
         currentState = AllStates.startFlywheel;
 
         ballStop.setPosition(0.7);
 
-        PoseStorage.autoEnd = PoseConstants.p.of(0,0,0);
+        PoseStorage.autoEnd = PoseConstants.p.of(58,8,90);
 
-        PrismAnimations.Snakes snakes = new PrismAnimations.Snakes(Color.GREEN);
-        if (currentAlliance.allianceColor == AllianceColor.BLUE) {
-            snakes.setColors(Color.BLUE);
-        } else {
-            snakes.setColors(Color.RED);
-        }
-        snakes.setBrightness(75);
-        snakes.setSnakeLength(20);
-        snakes.setSpeed(0.1f);
-        ledStick.insertAndUpdateAnimation(GoBildaPrismDriver.LayerHeight.LAYER_0, snakes);
+        SnakeColors(ledStick, currentAlliance.allianceColor);
     }
 
     @Override
     public void start() {
         pathTimer.reset();
-        frontRamp.setPosition(1);
+        matchTimer.reset();
+
+        frontRamp.setPosition(0.9);
     }
 
     @Override
     public void loop() {
         follower.update();
+        OdoAim.update();
+        OdoAim.telemetry();
 
         updatePathState();
-
-        updateTelemetry(telemetry);
-        telemetry.update();
 
         flywheel.setVelocity(rpmToTPS(flywheelRPM));
         flywheelPIDF.p = p;
@@ -174,12 +158,9 @@ public class scrimAutoRed extends OpMode {
         flywheelPIDF.f = f;
 
         telemetry.addData("Pose", follower.pose());
-        telemetry.addData("isClose", isClose());
         telemetry.addData("isBusy", follower.isBusy());
         telemetry.addData("RobotHeading", follower.pose().heading());
     }
-
-    private Pose targetPose = new Pose(0,0,0);
 
     public void updatePathState() {
         // IVY and state machine
@@ -187,7 +168,7 @@ public class scrimAutoRed extends OpMode {
             case startFlywheel:
                 ballStop.setPosition(0.7);
 
-                flywheelRPM = 2450;
+                flywheelRPM = 2390;
 
                 intake.setPower(-1);
                 inner.setPower(-1);
@@ -223,8 +204,6 @@ public class scrimAutoRed extends OpMode {
             case goToForwardAfterShoot:
                 follower.follow(forwardAfterShoot());
 
-                targetPose = forwardAfterShoot().endPose();
-
                 if (follower.isBusy() || pathTimer.seconds() > 1) {
                     currentState = AllStates.goToIntaking;
                     pathTimer.reset();
@@ -236,8 +215,6 @@ public class scrimAutoRed extends OpMode {
 
                 follower.follow(goIntakePath());
 
-                targetPose = goIntakePath().endPose();
-
                 if (pathTimer.seconds() > 3.5) {
                     currentState = AllStates.goToHalfOfParking;
                     pathTimer.reset();
@@ -245,8 +222,6 @@ public class scrimAutoRed extends OpMode {
                 break;
             case goToHalfOfParking:
                 follower.follow(halfOfParking());
-
-                targetPose = halfOfParking().endPose();
 
                 if (follower.isBusy() || pathTimer.seconds() > 1) {
                     currentState = AllStates.goToFullParking;
@@ -258,8 +233,6 @@ public class scrimAutoRed extends OpMode {
 
                 intake.setPower(1);
                 inner.setPower(0);
-
-                targetPose = fullParking().endPose();
 
                 if (follower.isBusy() || pathTimer.seconds() > 2.5) {
                     currentState = AllStates.end;
@@ -273,16 +246,13 @@ public class scrimAutoRed extends OpMode {
                 inner.setPower(0);
                 frontRamp.setPosition(1);
 
+                PoseStorage.autoEnd = follower.pose();
+
                 break;
         }
     }
 
-    public double rpmToTPS(double rpm) {
-        final double TICKS_PER_REVOLUTION = 28.0;
-        return (rpm * TICKS_PER_REVOLUTION) / 60;
-    }
-
-    public boolean isClose() {
+    /*public boolean isClose() {
         Pose currentPose = follower.pose();
         double distance = Math.hypot(targetPose.x() - currentPose.y(), targetPose.y() - currentPose.y());
 
@@ -296,5 +266,5 @@ public class scrimAutoRed extends OpMode {
     @Override
     public void stop() {
         PoseStorage.autoEnd = follower.pose();
-    }
+    }*/
 }

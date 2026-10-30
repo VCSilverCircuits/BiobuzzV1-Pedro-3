@@ -1,7 +1,13 @@
 package org.firstinspires.ftc.teamcode.vcsc.opmodes.teleOp;
 
+import static org.firstinspires.ftc.teamcode.vcsc.subsystems.Shared.MirrorPose;
+import static org.firstinspires.ftc.teamcode.vcsc.subsystems.Shared.SnakeColors;
+import static org.firstinspires.ftc.teamcode.vcsc.subsystems.Shared.rpmToTPS;
+
 import com.bylazar.configurables.annotations.Configurable;
+import com.bylazar.telemetry.PanelsTelemetry;
 import com.pedropathing.follower.Follower;
+import com.pedropathing.math.Pose;
 import com.pedropathing.utils.Timer;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
@@ -12,9 +18,7 @@ import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.pedro.Constants;
-import org.firstinspires.ftc.teamcode.vcsc.external.goBildaPrism.Color;
 import org.firstinspires.ftc.teamcode.vcsc.external.goBildaPrism.GoBildaPrismDriver;
-import org.firstinspires.ftc.teamcode.vcsc.external.goBildaPrism.PrismAnimations;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.alliance.AllianceColor;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.alliance.currentAlliance;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.posesystems.PoseConstants;
@@ -22,7 +26,7 @@ import org.firstinspires.ftc.teamcode.vcsc.subsystems.posesystems.PoseStorage;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.turret.odoAim;
 
 @Configurable
-public class scrimTeleOp extends OpMode {
+public class TeleOp extends OpMode {
     private Follower follower;
     private odoAim OdoAim;
 
@@ -41,18 +45,19 @@ public class scrimTeleOp extends OpMode {
 
     private boolean backspinLastPressed;
 
-    Timer waitSecondBeforeStart = new Timer();
+    Timer waitSecondBeforeStart;
+
+    // Temp servo poses
     private static double servoPos = 0.5;
+    public static double hoodAngleTemp = 0.44;
 
     // Flywheel PIDF and other setup
     PIDFCoefficients flywheelPIDF = new PIDFCoefficients(p, i, d, f);
     public static double p = 36;
     public static double i = 1;
     public static double d = 28.5;
-    public static double f = 20;
+    public static double f = 30;
     private static double flywheelRPM = 2390;
-
-    public static double hoodAngleTemp = 0.38;
 
     @Override
     public void init() {
@@ -65,7 +70,13 @@ public class scrimTeleOp extends OpMode {
         if (PoseStorage.autoEnd != null) {
             follower.setPose(PoseStorage.autoEnd);
         } else {
-            follower.setPose(PoseConstants.p.of(58, 8, 90));
+            if (currentAlliance.allianceColor == AllianceColor.RED) {
+                follower.setPose(PoseConstants.p.of(58, 8, 90));
+            } else {
+                Pose pose = new Pose(58, 8, 90);
+                Pose mirror = MirrorPose(pose);
+                follower.setPose(mirror);
+            }
         }
 
         flywheel.setDirection(DcMotorSimple.Direction.FORWARD);
@@ -75,16 +86,9 @@ public class scrimTeleOp extends OpMode {
         currentActionB = TeleActions.IDLE;
         previousActionB = null;
 
-        PrismAnimations.Snakes snakes = new PrismAnimations.Snakes(Color.GREEN);
-        if (currentAlliance.allianceColor == AllianceColor.BLUE) {
-            snakes.setColors(Color.BLUE);
-        } else {
-            snakes.setColors(Color.RED);
-        }
-        snakes.setBrightness(75);
-        snakes.setSnakeLength(20);
-        snakes.setSpeed(0.1f);
-        ledStick.insertAndUpdateAnimation(GoBildaPrismDriver.LayerHeight.LAYER_0, snakes);
+        waitSecondBeforeStart = new Timer();
+
+        SnakeColors(ledStick, currentAlliance.allianceColor);
     }
 
     @Override
@@ -97,7 +101,6 @@ public class scrimTeleOp extends OpMode {
         aimWasLastPressed = false;
         recalLastPressed = false;
         waitSecondBeforeStart.reset();
-
     }
 
     @Override
@@ -116,23 +119,17 @@ public class scrimTeleOp extends OpMode {
         //double pos = 90.0 / 180.0;
         //turretRight.setPosition(servoPos);
         //turretLeft.setPosition(servoPos);
-
-
         // Driving ---------
 
         // Actions ---------
-        Timer shootIntakeTimer = new Timer();
-
         switch (currentActionB) {
             case INTAKING:
-                shootIntakeTimer.reset();
                 ballStop.setPosition(0.7);
 
                 intake.setPower(-1);
                 inner.setPower(-1);
                 break;
             case BACKSPIN:
-                shootIntakeTimer.reset();
                 ballStop.setPosition(0.7);
 
                 intake.setPower(1);
@@ -142,9 +139,7 @@ public class scrimTeleOp extends OpMode {
                 ballStop.setPosition(0.9);
 
                 inner.setPower(-1);
-                if (shootIntakeTimer.seconds() > 1) {
-                    intake.setPower(0);
-                }
+                intake.setPower(0);
                 break;
             case IDLE:
                 ballStop.setPosition(0.7);
@@ -154,13 +149,15 @@ public class scrimTeleOp extends OpMode {
                 break;
         }
         // Actions ---------
-        double flywheelRPM = 2390;
+
+        // Flywheel ---------
         // Turn on flywheel velocity on start
         flywheel.setVelocity(rpmToTPS(flywheelRPM));
         flywheelPIDF.p = p;
         flywheelPIDF.i = i;
         flywheelPIDF.d = d;
         flywheelPIDF.f = f;
+        // Flywheel ---------
 
         // Controls ---------
         if (gamepad1.left_bumper) {
@@ -185,10 +182,6 @@ public class scrimTeleOp extends OpMode {
             }
         }
 
-        // hoodAngling.setFlywheelSpeedToHoodAngle(hoodAngle.getPosition(), flywheelPIDF);
-
-        hoodAngle.setPosition(hoodAngleTemp);
-
         if (gamepad1.y && !rampWasLastPressed) {
             rampToggle = !rampToggle;
         }
@@ -196,7 +189,7 @@ public class scrimTeleOp extends OpMode {
         if (rampToggle) {
             frontRamp.setPosition(0.4);
         } else {
-            frontRamp.setPosition(1);
+            frontRamp.setPosition(0.9);
         }
 
         if (gamepad1.dpad_up && !aimWasLastPressed) {
@@ -210,34 +203,35 @@ public class scrimTeleOp extends OpMode {
         }
 
         if (gamepad1.dpad_down && !recalLastPressed) {
-            follower.setPose(PoseConstants.p.of(6.9, 58, 270));
+            follower.setPose(PoseConstants.p.of(80, 58, 270));
         }
         recalLastPressed = gamepad1.dpad_down;
         // Controls ---------
+
+        // Hood angles ---------
+        // hoodAngling.setFlywheelSpeedToHoodAngle(hoodAngle.getPosition(), flywheelPIDF);
+
+        hoodAngle.setPosition(hoodAngleTemp);
+        // Hood angles ---------
 
         // Telemetry ---------
         telemetry.addData("Current Action:", currentActionB);
         telemetry.addData("Flywheel Power:", flywheel.getPower());
         telemetry.addData("Flywheel Velocity:", (flywheel.getVelocity()/28)*60);
-        telemetry.addData("Ramp Position", frontRamp.getPosition());
-        telemetry.addData("Hood Angle", hoodAngle.getPosition());
-        telemetry.addData("allience colro", currentAlliance.allianceColor);
-        telemetry.addData("Robot Heading", follower.pose().heading());
+        telemetry.addData("Ramp Position:", frontRamp.getPosition());
+        telemetry.addData("Hood Angle:", hoodAngle.getPosition());
+        telemetry.addData("Alliance Color:", currentAlliance.allianceColor);
+        telemetry.addData("Robot Heading:", follower.pose().heading());
+
+        PanelsTelemetry.INSTANCE.getTelemetry();
+        PanelsTelemetry.INSTANCE.getFtcTelemetry();
         // Telemetry ---------
     }
 
     @Override
     public void stop() {
-        PrismAnimations.Snakes snakes = new PrismAnimations.Snakes(Color.GREEN);
-        snakes.setBrightness(75);
-        snakes.setSnakeLength(20);
-        snakes.setSpeed(0.1f);
-        ledStick.insertAndUpdateAnimation(GoBildaPrismDriver.LayerHeight.LAYER_0, snakes);
-    }
-
-    public double rpmToTPS(double rpm) {
-        final double TICKS_PER_REVOLUTION = 28.0;
-        return (rpm * TICKS_PER_REVOLUTION) / 60;
+        SnakeColors(ledStick);
+        PoseStorage.autoEnd = null;
     }
 
     // MAPPINGS ------------------------
