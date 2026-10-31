@@ -85,14 +85,14 @@ public class Auto extends OpMode {
     public static double p = 36;
     public static double i = 1;
     public static double d = 28.5;
-    public static double f = 20;
-    private static double flywheelRPM = 2390;
+    public static double f = 30;
+    private static double flywheelRPM = 2640;
 
     private final Pose start = PoseConstants.p.of(58, 8, 90);
     private final Pose path1 = PoseConstants.p.of(49.3661, 15.8204, 180);
     private final Pose point2Start = PoseConstants.p.of(49.3661, 15.8204, 180);
-    private final Pose point2 = PoseConstants.p.of(8.5, 8.5, 180);
-    private final Pose point2Control1 = PoseConstants.p.of(45.6209, 8.5, 0);
+    private final Pose point2 = PoseConstants.p.of(8.5, 9, 180);
+    private final Pose point2Control1 = PoseConstants.p.of(45.6209, 9, 0);
     private final Pose point3Start = PoseConstants.p.of(8.5, 8.5, 180);
     private final Pose point3 = PoseConstants.p.of(28.1865, 49.9137, 180);
     private final Pose point4Start = PoseConstants.p.of(28.1865, 49.9137, 180);
@@ -171,7 +171,9 @@ public class Auto extends OpMode {
                 flywheelRPM = 2390;
 
                 intake.setPower(-1);
-                inner.setPower(-1);
+                if (pathTimer.seconds() > 2) {
+                    inner.setPower(-1);
+                }
 
                 if (pathTimer.seconds() > 4) {
                     ballStop.setPosition(0.9);

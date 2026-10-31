@@ -70,13 +70,13 @@ public class TeleOp extends OpMode {
         if (PoseStorage.autoEnd != null) {
             follower.setPose(PoseStorage.autoEnd);
         } else {
-            if (currentAlliance.allianceColor == AllianceColor.RED) {
+            //if (currentAlliance.allianceColor == AllianceColor.RED) {
                 follower.setPose(PoseConstants.p.of(58, 8, 90));
-            } else {
+            /*} else {
                 Pose pose = new Pose(58, 8, 90);
                 Pose mirror = MirrorPose(pose);
                 follower.setPose(mirror);
-            }
+            }*/
         }
 
         flywheel.setDirection(DcMotorSimple.Direction.FORWARD);
@@ -203,7 +203,7 @@ public class TeleOp extends OpMode {
         }
 
         if (gamepad1.dpad_down && !recalLastPressed) {
-            follower.setPose(PoseConstants.p.of(80, 58, 270));
+            follower.setPose(PoseConstants.p.of(2, 61, 270));
         }
         recalLastPressed = gamepad1.dpad_down;
         // Controls ---------

@@ -35,8 +35,8 @@ public class odoAim {
 
     private double targetTurretHeading = 0;
     private double targetServoHeading = 0;
-    private static double MIN_SERVO_RADIANS = -2.52; // current range of the servos (NOT THE TURRET) are -177.5 to 177.5 degrees
-    private static double MAX_SERVO_RADIANS = 2.52;
+    private static double MIN_SERVO_RADIANS = -2.56; // current range of the servos (NOT THE TURRET) are -177.5 to 177.5 degrees
+    private static double MAX_SERVO_RADIANS = 2.56; //old: 2.52
 
     private static double TURRET_GEAR_TO_SERVO_RATIO = 167.0 / 240.0; // TODO: replace 1/1 with (turret gear teeth) / (servo gear teeth)
 
