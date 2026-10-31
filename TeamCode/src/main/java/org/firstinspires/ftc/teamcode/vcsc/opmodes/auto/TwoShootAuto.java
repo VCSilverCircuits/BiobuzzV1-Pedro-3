@@ -24,6 +24,7 @@ import org.firstinspires.ftc.teamcode.vcsc.subsystems.posesystems.PoseStorage;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.turret.odoAim;
 
 // temp shared auto
+@Disabled
 @Autonomous(name = "TwoShootAutoTest")
 public class TwoShootAuto extends OpMode {
     // MAPPINGS ------------------------
