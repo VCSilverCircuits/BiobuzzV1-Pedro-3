@@ -7,10 +7,9 @@ import com.pedropathing.api.Paths;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.math.Pose;
 import com.pedropathing.paths.Path;
+import com.pedropathing.paths.interpolator.Interpolator;
 import com.pedropathing.utils.Timer;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
-import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
@@ -24,9 +23,7 @@ import org.firstinspires.ftc.teamcode.vcsc.subsystems.posesystems.PoseStorage;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.turret.odoAim;
 
 // temp shared auto
-@Disabled
-@Autonomous(name = "TwoShootAutoTest")
-public class TwoShootAuto extends OpMode {
+public class LimelightAuto extends OpMode {
     // MAPPINGS ------------------------
     private DcMotorEx frontRight;
     private DcMotorEx frontLeft;
@@ -68,22 +65,13 @@ public class TwoShootAuto extends OpMode {
 
     private Follower follower;
     private odoAim OdoAim;
+    /**
+     * Use limelight to detect if the bucket has tipped <p>
+     * This is used for checking which bucket to shoot in second time
+     */
+    private boolean isTipped;
 
-    private enum AllStates {
-        startFlywheel,
-        startShoot,
-        endShoot,
-        goToForwardAfterShoot,
-        goToIntaking,
-        goToHalfOfParking,
-        goBackToShoot,
-        shootToHalfofPark,
-        goToFullParking,
-        end
-    }
-
-    private AllStates currentState;
-    private int timesShot;
+    private AllAutoStates currentState;
 
     private Timer pathTimer;
     private Timer matchTimer;
@@ -93,63 +81,78 @@ public class TwoShootAuto extends OpMode {
     public static double i = 1;
     public static double d = 28.5;
     public static double f = 30;
-    private static double flywheelRPM = 2390;
+    private static double flywheelRPM = 2440;
 
     private final Pose start = PoseConstants.p.of(58, 8, 90);
-    private final Pose path1 = PoseConstants.p.of(49.3661, 15.8204, 180);
-    private final Pose point2Start = PoseConstants.p.of(49.3661, 15.8204, 180);
-    private final Pose point2 = PoseConstants.p.of(8.5, 9, 180);
-    private final Pose point2Control1 = PoseConstants.p.of(45.6209, 9, 0);
-    private final Pose point3Start = PoseConstants.p.of(8.5, 8.5, 180);
-    private final Pose point3 = PoseConstants.p.of(28.1865, 49.9137, 180);
-    private final Pose point4Start = PoseConstants.p.of(28.1865, 49.9137, 180);
-    private final Pose point4 = PoseConstants.p.of(10.4471, 95.1985, 90);
-
-    public Path forwardAfterShoot() {
-        return Paths.line(start, path1).linear(start, path1);
-    }
+    private final Pose goToIntake = PoseConstants.p.of(8.5, 9, 270);
+    private final Pose goToIntakeControl1 = PoseConstants.p.of(5.2893, 62.7583, 0);
+    private final Pose goToIntakeSegment1Start = PoseConstants.p.of(8.5, 9, 90);
+    private final Pose goToIntakeSegment1End = PoseConstants.p.of(8.5, 9, 270);
+    private final Pose goToIntakeSegment2Start = PoseConstants.p.of(8.5, 9, 270);
+    private final Pose goToIntakeSegment2End = PoseConstants.p.of(8.5, 9, 270);
+    private final Pose shootTwoTippedStart = PoseConstants.p.of(8.5, 9, 270);
+    private final Pose shootTwoTipped = PoseConstants.p.of(58, 133, 270);
+    private final Pose shootTwoTippedControl1 = PoseConstants.p.of(35.3182, 52.6558, 0);
+    private final Pose shootTwoTippedControl2 = PoseConstants.p.of(15.8399, 139.0456, 0);
+    private final Pose shootTwoTippedControl3 = PoseConstants.p.of(55.388, 99.7961, 0);
+    private final Pose halfOfParkPathStart = PoseConstants.p.of(8.5, 9, 180);
+    private final Pose halfOfParkPathEnd = PoseConstants.p.of(28.1865, 49.9137, 180);
+    private final Pose fullOfParkPathStart = PoseConstants.p.of(28.1865, 49.9137, 180);
+    private final Pose fullOfParkPathEnd = PoseConstants.p.of(10.4471, 95.1985, 90);
 
     public Path goIntakePath() {
-        return Paths.curve(point2Start, point2Control1, point2).linear(point2Start, point2);
+        return Paths.curve(start, goToIntakeControl1, goToIntake)
+                .heading(Interpolator.piecewise()
+                        .until(0.5, Interpolator.linear(goToIntakeSegment1Start, goToIntakeSegment1End))
+                        .until(1, Interpolator.linear(goToIntakeSegment2Start, goToIntakeSegment2End)));
     }
 
+    // not tipped path
+    public Path shootTwoNoTipped() {
+        return Paths.curve(goToIntake, goToIntakeControl1, start)
+                .heading(Interpolator.piecewise()
+                        .until(0.5, Interpolator.linear(goToIntakeSegment1End, goToIntakeSegment1Start))
+                        .until(1, Interpolator.linear(goToIntakeSegment2End, goToIntakeSegment2Start)));
+    }
+
+    // Tipped path
+    public Path shootTwoTipped() {
+        return Paths
+                .curve(shootTwoTippedStart, shootTwoTippedControl1, shootTwoTippedControl2, shootTwoTippedControl3, shootTwoTipped)
+                .linear(shootTwoTippedStart, shootTwoTipped);
+    }
+
+    // Use if not tipped
+    // If tipped do not use
     public Path halfOfParking() {
-        return Paths.line(point3Start, point3).linear(point3Start, point3);
-    }
-
-    public Path goBackToShoot() {
-        return Paths.line(point3, start).linear(point3Start, point3);
-    }
-
-    public Path shootToHalfOfPark() {
-        return Paths.line(start, point3).linear(start, point3);
+        return Paths.line(halfOfParkPathStart, halfOfParkPathEnd).linear(halfOfParkPathStart, halfOfParkPathEnd);
     }
 
     public Path fullParking() {
-        return Paths.line(point4Start, point4).linear(point4Start, point4);
+        return Paths.line(fullOfParkPathStart, fullOfParkPathEnd).linear(fullOfParkPathStart, fullOfParkPathEnd);
     }
+
+
 
     @Override
     public void init() {
         hardwareMap();
         follower = Constants.create(hardwareMap);
-        follower.setPose(PoseConstants.p.of(58, 8, 90));
+        follower.setPose(PoseConstants.p.of(58,8,90));
 
         OdoAim = new odoAim(hardwareMap, follower, currentAlliance.allianceColor, intake, telemetry);
-        OdoAim.manual();
+        OdoAim.auto();
 
         pathTimer = new Timer();
         matchTimer = new Timer();
 
-        currentState = AllStates.startFlywheel;
+        currentState = AllAutoStates.startFlywheel;
 
         ballStop.setPosition(0.7);
 
-        PoseStorage.autoEnd = PoseConstants.p.of(58, 8, 90);
+        PoseStorage.autoEnd = PoseConstants.p.of(58,8,90);
 
         SnakeColors(ledStick, currentAlliance.allianceColor);
-
-        timesShot = 0;
     }
 
     @Override
@@ -185,7 +188,7 @@ public class TwoShootAuto extends OpMode {
             case startFlywheel:
                 ballStop.setPosition(0.7);
 
-                flywheelRPM = 2390;
+                flywheelRPM = 2440;
 
                 intake.setPower(-1);
                 if (pathTimer.seconds() > 2) {
@@ -194,20 +197,70 @@ public class TwoShootAuto extends OpMode {
 
                 if (pathTimer.seconds() > 4) {
                     ballStop.setPosition(0.9);
-                    currentState = AllStates.startShoot;
+                    currentState = AllAutoStates.startShootOne;
                     pathTimer.reset();
                 }
                 break;
-            case startShoot:
+            case startShootOne:
                 intake.setPower(-1);
                 inner.setPower(-1);
 
                 if (pathTimer.seconds() > 3.5) {
-                    currentState = AllStates.endShoot;
+                    currentState = AllAutoStates.endShootOne;
                     pathTimer.reset();
                 }
                 break;
-            case endShoot:
+            case endShootOne:
+                ballStop.setPosition(0.7);
+
+                inner.setPower(0);
+                intake.setPower(1);
+
+                if (pathTimer.seconds() > .5) {
+                    currentState = AllAutoStates.goToIntaking;
+                    pathTimer.reset();
+                }
+                break;
+            /*case goToForwardAfterShoot:
+                follower.follow(forwardAfterShoot());
+
+                if (follower.isBusy() || pathTimer.seconds() > 1) {
+                    currentState = AllAutoStates.goToIntaking;
+                    pathTimer.reset();
+                }
+                break;*/
+            case goToIntaking:
+                intake.setPower(-1);
+                inner.setPower(-1);
+
+                follower.follow(goIntakePath());
+
+                if (pathTimer.seconds() > 3.5) {
+                    currentState = AllAutoStates.goToShootPosTwo;
+                    pathTimer.reset();
+                }
+                break;
+            case goToShootPosTwo:
+                if (isTipped) {
+                    follower.follow(shootTwoTipped());
+                } else {
+                    follower.follow(shootTwoNoTipped());
+                }
+                if (follower.isBusy() || pathTimer.seconds() > 4) {
+                    currentState = AllAutoStates.goToFullParking;
+                    pathTimer.reset();
+                }
+                break;
+            case startShootTwo:
+                intake.setPower(-1);
+                inner.setPower(-1);
+
+                if (pathTimer.seconds() > 3.5) {
+                    currentState = AllAutoStates.endShootTwo;
+                    pathTimer.reset();
+                }
+                break;
+            case endShootTwo:
                 ballStop.setPosition(0.7);
 
                 flywheelRPM = 0;
@@ -216,83 +269,45 @@ public class TwoShootAuto extends OpMode {
                 intake.setPower(1);
 
                 if (pathTimer.seconds() > .5) {
-                    pathTimer.reset();
-                    if (timesShot > 0) {
-                        flywheelRPM = 0;
-                        timesShot++;
-                        currentState = AllStates.shootToHalfofPark;
+                    if (isTipped) {
+                        currentState = AllAutoStates.goToFullParking;
                     } else {
-                        currentState = AllStates.goToForwardAfterShoot;
-                        timesShot++;
+                        currentState = AllAutoStates.goToHalfOfParking;
                     }
-                }
-                break;
-            case goToForwardAfterShoot:
-                follower.follow(forwardAfterShoot());
-
-                if (follower.isBusy() || pathTimer.seconds() > 1) {
-                    currentState = AllStates.goToIntaking;
-                    pathTimer.reset();
-                }
-                break;
-            case goToIntaking:
-                intake.setPower(-1);
-                inner.setPower(-1);
-
-                follower.follow(goIntakePath());
-
-                if (pathTimer.seconds() > 3.5) {
-                    currentState = AllStates.goToHalfOfParking;
                     pathTimer.reset();
                 }
                 break;
             case goToHalfOfParking:
                 follower.follow(halfOfParking());
 
-                if (!follower.isBusy() || pathTimer.seconds() > 1) {
+                if (follower.isBusy() || pathTimer.seconds() > 1) {
+                    currentState = AllAutoStates.goToFullParking;
                     pathTimer.reset();
-                    currentState = AllStates.goBackToShoot;
                 }
-
-            break;
-            case goBackToShoot:
-            follower.follow(goBackToShoot());
-
-            if (!follower.isBusy() || pathTimer.seconds() > 3) {
-                currentState = AllStates.startShoot;
-                pathTimer.reset();
-            }
-            case shootToHalfofPark:
-            follower.follow(shootToHalfOfPark());
-
-            if (!follower.isBusy() || pathTimer.seconds() > 2) {
-                pathTimer.reset();
-                currentState = AllStates.goToFullParking;
-            }
-
+                break;
             case goToFullParking:
-            follower.follow(fullParking());
+                follower.follow(fullParking());
 
-            intake.setPower(1);
-            inner.setPower(0);
+                intake.setPower(1);
+                inner.setPower(0);
 
-            if (follower.isBusy() || pathTimer.seconds() > 2.5) {
-                currentState = AllStates.end;
-                pathTimer.reset();
-            }
-            break;
+                if (follower.isBusy() || pathTimer.seconds() > 2.5) {
+                    currentState = AllAutoStates.end;
+                    pathTimer.reset();
+                }
+                break;
             case end:
-            flywheelRPM = 0;
+                flywheelRPM = 0;
 
-            intake.setPower(0);
-            inner.setPower(0);
-            frontRamp.setPosition(1);
+                intake.setPower(0);
+                inner.setPower(0);
+                frontRamp.setPosition(1);
 
-            PoseStorage.autoEnd = follower.pose();
+                PoseStorage.autoEnd = follower.pose();
 
-            break;
+                break;
+        }
     }
-}
 
     /*public boolean isClose() {
         Pose currentPose = follower.pose();

@@ -24,6 +24,7 @@ import org.firstinspires.ftc.teamcode.vcsc.subsystems.alliance.currentAlliance;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.posesystems.PoseConstants;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.posesystems.PoseStorage;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.turret.odoAim;
+import org.firstinspires.ftc.vision.apriltag.AprilTagClusterDetection;
 
 @Configurable
 public class TeleOp extends OpMode {
