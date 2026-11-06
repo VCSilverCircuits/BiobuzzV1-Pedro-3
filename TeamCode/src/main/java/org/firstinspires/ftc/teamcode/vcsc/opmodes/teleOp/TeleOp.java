@@ -158,6 +158,7 @@ public class TeleOp extends OpMode {
         flywheelPIDF.i = i;
         flywheelPIDF.d = d;
         flywheelPIDF.f = f;
+        flywheel.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, flywheelPIDF);
         // Flywheel ---------
 
         // Controls ---------
