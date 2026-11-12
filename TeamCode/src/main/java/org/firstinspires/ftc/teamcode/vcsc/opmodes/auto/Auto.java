@@ -83,13 +83,13 @@ public class Auto extends OpMode {
     private static double flywheelRPM = 2440;
 
     private final Pose start = PoseConstants.p.of(58, 8, 90);
-    private final Pose goToIntake = PoseConstants.p.of(8.5, 9, 270);
+    private final Pose goToIntake = PoseConstants.p.of(0.2281, 5.7762, 270);
     private final Pose goToIntakeControl1 = PoseConstants.p.of(5.2893, 62.7583, 0);
-    private final Pose goToIntakeSegment1Start = PoseConstants.p.of(8.5, 9, 90);
-    private final Pose goToIntakeSegment1End = PoseConstants.p.of(8.5, 9, 270);
-    private final Pose goToIntakeSegment2Start = PoseConstants.p.of(8.5, 9, 270);
-    private final Pose goToIntakeSegment2End = PoseConstants.p.of(8.5, 9, 270);
-    private final Pose shootTwoTippedStart = PoseConstants.p.of(8.5, 9, 270);
+    private final Pose goToIntakeSegment1Start = PoseConstants.p.of(0.2281, 5.7762, 90);
+    private final Pose goToIntakeSegment1End = PoseConstants.p.of(0.2281, 5.7762, 270);
+    private final Pose goToIntakeSegment2Start = PoseConstants.p.of(0.2281, 5.7762, 270);
+    private final Pose goToIntakeSegment2End = PoseConstants.p.of(0.2281, 5.7762, 270);
+    private final Pose shootTwoTippedStart = PoseConstants.p.of(4.3236, 8.8699, 270);
     private final Pose shootTwoTipped = PoseConstants.p.of(58, 133, 270);
     private final Pose shootTwoTippedControl1 = PoseConstants.p.of(35.3182, 52.6558, 0);
     private final Pose shootTwoTippedControl2 = PoseConstants.p.of(15.8399, 139.0456, 0);
@@ -146,6 +146,8 @@ public class Auto extends OpMode {
         currentState = AllAutoStates.startFlywheel;
 
         ballStop.setPosition(0.7);
+
+        isTipped = false;
 
         PoseStorage.autoEnd = PoseConstants.p.of(58,8,90);
 
@@ -214,19 +216,14 @@ public class Auto extends OpMode {
                 intake.setPower(1);
 
                 if (pathTimer.seconds() > .5) {
+                    ballStop.setPosition(0.7);
                     currentState = AllAutoStates.goToIntaking;
                     pathTimer.reset();
                 }
                 break;
-            /*case goToForwardAfterShoot:
-                follower.follow(forwardAfterShoot());
-
-                if (follower.isBusy() || pathTimer.seconds() > 1) {
-                    currentState = AllAutoStates.goToIntaking;
-                    pathTimer.reset();
-                }
-                break;*/
             case goToIntaking:
+                ballStop.setPosition(0.7);
+
                 intake.setPower(-1);
                 inner.setPower(-1);
 
@@ -238,21 +235,24 @@ public class Auto extends OpMode {
                 }
                 break;
             case goToShootPosTwo:
-                if (isTipped) {
-                    follower.follow(shootTwoTipped());
-                } else {
-                    follower.follow(shootTwoNoTipped());
-                }
+                ballStop.setPosition(0.7);
+
+                follower.follow(shootTwoTipped());
+
+                ballStop.setPosition(0.7);
+
                 if (follower.isBusy() || pathTimer.seconds() > 4) {
-                    currentState = AllAutoStates.goToFullParking;
+                    currentState = AllAutoStates.startShootTwo;
                     pathTimer.reset();
                 }
                 break;
             case startShootTwo:
+                ballStop.setPosition(0.9);
+
                 intake.setPower(-1);
                 inner.setPower(-1);
 
-                if (pathTimer.seconds() > 3.5) {
+                if (pathTimer.seconds() > 4.5) {
                     currentState = AllAutoStates.endShootTwo;
                     pathTimer.reset();
                 }
@@ -263,7 +263,7 @@ public class Auto extends OpMode {
                 flywheelRPM = 0;
 
                 inner.setPower(0);
-                intake.setPower(1);
+                intake.setPower(0);
 
                 if (pathTimer.seconds() > .5) {
                     if (isTipped) {

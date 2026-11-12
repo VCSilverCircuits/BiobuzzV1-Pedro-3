@@ -10,6 +10,9 @@ import com.pedropathing.paths.Path;
 import com.pedropathing.paths.interpolator.Interpolator;
 import com.pedropathing.utils.Timer;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
+import com.qualcomm.hardware.limelightvision.LLResult;
+import com.qualcomm.hardware.limelightvision.LLResultTypes;
+import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
@@ -21,6 +24,8 @@ import org.firstinspires.ftc.teamcode.vcsc.subsystems.alliance.currentAlliance;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.posesystems.PoseConstants;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.posesystems.PoseStorage;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.turret.odoAim;
+import org.firstinspires.ftc.vision.apriltag.AprilTagClusterDetection;
+import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 
 // temp shared auto
 public class LimelightAuto extends OpMode {
@@ -42,6 +47,8 @@ public class LimelightAuto extends OpMode {
     private GoBildaPrismDriver ledStick;
     private GoBildaPinpointDriver pinpointDriver;
 
+    private Limelight3A limelight;
+
     public void hardwareMap() {
         frontRight = hardwareMap.get(DcMotorEx.class, "frontRight");
         frontLeft = hardwareMap.get(DcMotorEx.class, "frontLeft");
@@ -60,6 +67,8 @@ public class LimelightAuto extends OpMode {
         pinpointDriver = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
 
         flywheel = hardwareMap.get(DcMotorEx.class, "scrimFlywheel");
+
+        limelight = hardwareMap.get(Limelight3A.class, "limelight");
     }
     // MAPPINGS ------------------------
 
@@ -132,7 +141,7 @@ public class LimelightAuto extends OpMode {
         return Paths.line(fullOfParkPathStart, fullOfParkPathEnd).linear(fullOfParkPathStart, fullOfParkPathEnd);
     }
 
-
+    private int[] aprilTagIds;
 
     @Override
     public void init() {
@@ -149,6 +158,13 @@ public class LimelightAuto extends OpMode {
         currentState = AllAutoStates.startFlywheel;
 
         ballStop.setPosition(0.7);
+
+        isTipped = false;
+
+        aprilTagIds = new int[]{34, 35, 36, 37};
+
+        limelight.pipelineSwitch(1);
+        limelight.start();
 
         PoseStorage.autoEnd = PoseConstants.p.of(58,8,90);
 
@@ -216,6 +232,19 @@ public class LimelightAuto extends OpMode {
                 inner.setPower(0);
                 intake.setPower(1);
 
+                LLResult result = limelight.getLatestResult();
+
+                for (LLResultTypes.FiducialResult fiducial : result.getFiducialResults()) {
+                    int seenId = fiducial.getFiducialId();
+                    for (int targetId : aprilTagIds) {
+                        if (seenId == targetId) {
+                            isTipped = true;
+                        } else {
+                            isTipped = false;
+                        }
+                    }
+                }
+
                 if (pathTimer.seconds() > .5) {
                     currentState = AllAutoStates.goToIntaking;
                     pathTimer.reset();
@@ -241,13 +270,22 @@ public class LimelightAuto extends OpMode {
                 }
                 break;
             case goToShootPosTwo:
-                if (isTipped) {
-                    follower.follow(shootTwoTipped());
-                } else {
-                    follower.follow(shootTwoNoTipped());
+                boolean alreadyFollowed = false;
+
+                if (!alreadyFollowed) {
+                    if (isTipped) {
+                        follower.follow(shootTwoTipped());
+                        alreadyFollowed = true;
+                        return;
+                    } else {
+                        follower.follow(shootTwoNoTipped());
+                        alreadyFollowed = true;
+                        return;
+                    }
                 }
+
                 if (follower.isBusy() || pathTimer.seconds() > 4) {
-                    currentState = AllAutoStates.goToFullParking;
+                    currentState = AllAutoStates.startShootTwo;
                     pathTimer.reset();
                 }
                 break;
