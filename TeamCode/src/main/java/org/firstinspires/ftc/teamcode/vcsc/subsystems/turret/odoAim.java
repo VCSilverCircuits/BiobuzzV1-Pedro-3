@@ -3,6 +3,8 @@ package org.firstinspires.ftc.teamcode.vcsc.subsystems.turret;
 import com.bylazar.configurables.annotations.Configurable;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.math.Pose;
+import com.qualcomm.hardware.limelightvision.LLResult;
+import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -50,6 +52,32 @@ public class odoAim {
 
     // odoAim initialization
     public odoAim(HardwareMap hardwareMap, Follower follower, AllianceColor allianceColor, DcMotorEx motorEncoder, Telemetry telemetry) {
+        this.telemetry = telemetry;
+        this.motorEncoder = motorEncoder;
+
+        // changes tracked target depending on if we are on blue or red
+        //this.audienceTargetPose = (allianceColor == AllianceColor.RED) ? REDTARGETAUDIENCE : BLUETARGETAUDIENCE;
+        //this.scoringTargetPose = (allianceColor == AllianceColor.RED) ? REDTARGETSCORING : BLUETARGETSCORING;
+        this.audienceTargetPose = REDTARGETAUDIENCE;
+        this.scoringTargetPose = REDTARGETSCORING;
+
+        turretHeadingRight = hardwareMap.get(Servo.class, "rightTurret");
+        turretHeadingLeft = hardwareMap.get(Servo.class, "leftTurret");
+
+        turretHeadingLeft.setDirection(Servo.Direction.REVERSE);
+        turretHeadingRight.setDirection(Servo.Direction.REVERSE);
+
+        turretHeadingRight.scaleRange(0.01, 0.99);
+        turretHeadingLeft.scaleRange(0.01, 0.99);
+
+        // passes the follower into the instance of this class
+        this.follower = follower;
+        this.targetPose = this.follower.pose().y() > 72 ? scoringTargetPose : audienceTargetPose;
+    }
+    public odoAim(HardwareMap hardwareMap, Follower follower, AllianceColor allianceColor, DcMotorEx motorEncoder, Telemetry telemetry, Limelight3A limelight) {
+        // If Mapped already in opmode already this override will map limelight and do everything else
+        this.limelight = limelight;
+
         this.telemetry = telemetry;
         this.motorEncoder = motorEncoder;
 

@@ -14,15 +14,18 @@ import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.pedro.Constants;
 import org.firstinspires.ftc.teamcode.vcsc.external.goBildaPrism.GoBildaPrismDriver;
+import org.firstinspires.ftc.teamcode.vcsc.subsystems.alliance.AllianceColor;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.alliance.currentAlliance;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.posesystems.PoseConstants;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.posesystems.PoseStorage;
+import org.firstinspires.ftc.teamcode.vcsc.subsystems.turret.FlywheelConstants;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.turret.odoAim;
 import org.firstinspires.ftc.vision.apriltag.AprilTagClusterDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
@@ -161,7 +164,11 @@ public class LimelightAuto extends OpMode {
 
         isTipped = false;
 
-        aprilTagIds = new int[]{34, 35, 36, 37};
+        if (currentAlliance.allianceColor == AllianceColor.RED) {
+            aprilTagIds = new int[]{34, 35, 36, 37};
+        } else {
+            aprilTagIds = new int[]{42, 43, 44, 45};
+        }
 
         limelight.pipelineSwitch(1);
         limelight.start();
@@ -187,11 +194,17 @@ public class LimelightAuto extends OpMode {
 
         updatePathState();
 
+        flywheelRPM = FlywheelConstants.flywheelRPM;
         flywheel.setVelocity(rpmToTPS(flywheelRPM));
+        p = FlywheelConstants.p;
+        i = FlywheelConstants.i;
+        d = FlywheelConstants.d;
+        f = FlywheelConstants.f;
         flywheelPIDF.p = p;
         flywheelPIDF.i = i;
         flywheelPIDF.d = d;
         flywheelPIDF.f = f;
+        flywheel.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, flywheelPIDF);
 
         telemetry.addData("Pose", follower.pose());
         telemetry.addData("isBusy", follower.isBusy());
@@ -199,7 +212,7 @@ public class LimelightAuto extends OpMode {
     }
 
     public void updatePathState() {
-        // IVY and state machine
+        // State machine
         switch (currentState) {
             case startFlywheel:
                 ballStop.setPosition(0.7);
@@ -250,14 +263,6 @@ public class LimelightAuto extends OpMode {
                     pathTimer.reset();
                 }
                 break;
-            /*case goToForwardAfterShoot:
-                follower.follow(forwardAfterShoot());
-
-                if (follower.isBusy() || pathTimer.seconds() > 1) {
-                    currentState = AllAutoStates.goToIntaking;
-                    pathTimer.reset();
-                }
-                break;*/
             case goToIntaking:
                 intake.setPower(-1);
                 inner.setPower(-1);

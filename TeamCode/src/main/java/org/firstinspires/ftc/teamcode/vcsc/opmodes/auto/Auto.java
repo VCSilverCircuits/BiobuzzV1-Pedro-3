@@ -10,6 +10,7 @@ import com.pedropathing.paths.interpolator.Interpolator;
 import com.pedropathing.utils.Timer;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -19,6 +20,7 @@ import org.firstinspires.ftc.teamcode.vcsc.external.goBildaPrism.GoBildaPrismDri
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.alliance.currentAlliance;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.posesystems.PoseConstants;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.posesystems.PoseStorage;
+import org.firstinspires.ftc.teamcode.vcsc.subsystems.turret.FlywheelConstants;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.turret.odoAim;
 
 // temp shared auto
@@ -76,11 +78,11 @@ public class Auto extends OpMode {
     private Timer matchTimer;
 
     PIDFCoefficients flywheelPIDF = new PIDFCoefficients(p, i, d, f);
-    public static double p = 36;
-    public static double i = 1;
-    public static double d = 28.5;
-    public static double f = 30;
-    private static double flywheelRPM = 2440;
+    public static double p = FlywheelConstants.p;
+    public static double i = FlywheelConstants.i;
+    public static double d = FlywheelConstants.d;
+    public static double f = FlywheelConstants.f;
+    private static double flywheelRPM = FlywheelConstants.flywheelRPM;
 
     private final Pose start = PoseConstants.p.of(58, 8, 90);
     private final Pose goToIntake = PoseConstants.p.of(0.2281, 5.7762, 270);
@@ -140,6 +142,8 @@ public class Auto extends OpMode {
         OdoAim = new odoAim(hardwareMap, follower, currentAlliance.allianceColor, intake, telemetry);
         OdoAim.auto();
 
+        FlywheelConstants.setIsAuto(true);
+
         pathTimer = new Timer();
         matchTimer = new Timer();
 
@@ -170,11 +174,18 @@ public class Auto extends OpMode {
 
         updatePathState();
 
+        FlywheelConstants.loop();
+        flywheelRPM = FlywheelConstants.flywheelRPM;
         flywheel.setVelocity(rpmToTPS(flywheelRPM));
+        p = FlywheelConstants.p;
+        i = FlywheelConstants.i;
+        d = FlywheelConstants.d;
+        f = FlywheelConstants.f;
         flywheelPIDF.p = p;
         flywheelPIDF.i = i;
         flywheelPIDF.d = d;
         flywheelPIDF.f = f;
+        flywheel.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, flywheelPIDF);
 
         telemetry.addData("Pose", follower.pose());
         telemetry.addData("isBusy", follower.isBusy());
@@ -182,7 +193,7 @@ public class Auto extends OpMode {
     }
 
     public void updatePathState() {
-        // IVY and state machine
+        // State machine
         switch (currentState) {
             case startFlywheel:
                 ballStop.setPosition(0.7);

@@ -1,13 +1,12 @@
 package org.firstinspires.ftc.teamcode.vcsc.opmodes.teleOp;
 
-import static org.firstinspires.ftc.teamcode.vcsc.subsystems.Shared.MirrorPose;
 import static org.firstinspires.ftc.teamcode.vcsc.subsystems.Shared.SnakeColors;
 import static org.firstinspires.ftc.teamcode.vcsc.subsystems.Shared.rpmToTPS;
 
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.PanelsTelemetry;
+import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.follower.Follower;
-import com.pedropathing.math.Pose;
 import com.pedropathing.utils.Timer;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
@@ -19,12 +18,11 @@ import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.pedro.Constants;
 import org.firstinspires.ftc.teamcode.vcsc.external.goBildaPrism.GoBildaPrismDriver;
-import org.firstinspires.ftc.teamcode.vcsc.subsystems.alliance.AllianceColor;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.alliance.currentAlliance;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.posesystems.PoseConstants;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.posesystems.PoseStorage;
+import org.firstinspires.ftc.teamcode.vcsc.subsystems.turret.FlywheelConstants;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.turret.odoAim;
-import org.firstinspires.ftc.vision.apriltag.AprilTagClusterDetection;
 
 @Configurable
 public class TeleOp extends OpMode {
@@ -43,22 +41,22 @@ public class TeleOp extends OpMode {
     private boolean odoAimToggle;
 
     private boolean recalLastPressed;
-
     private boolean backspinLastPressed;
+    private boolean intakeLastPressed;
 
-    Timer waitSecondBeforeStart;
-
-    // Temp servo poses
-    private static double servoPos = 0.5;
-    public static double hoodAngleTemp = 0.44;
+    public static double hoodAnglePos = FlywheelConstants.hoodAnglePos;
 
     // Flywheel PIDF and other setup
     PIDFCoefficients flywheelPIDF = new PIDFCoefficients(p, i, d, f);
-    public static double p = 36;
-    public static double i = 1;
-    public static double d = 28.5;
-    public static double f = 30;
-    private static double flywheelRPM = 2390;
+    public static double p = FlywheelConstants.p;
+    public static double i = FlywheelConstants.i;
+    public static double d = FlywheelConstants.d;
+    public static double f = FlywheelConstants.f;
+    private static double flywheelRPM = FlywheelConstants.flywheelRPM;
+
+    private TelemetryManager panelsTelemetry = PanelsTelemetry.INSTANCE.getTelemetry();
+
+    private Timer waitAfterStart;
 
     @Override
     public void init() {
@@ -67,6 +65,8 @@ public class TeleOp extends OpMode {
         follower = Constants.create(hardwareMap);
         OdoAim = new odoAim(hardwareMap, follower, currentAlliance.allianceColor, intake, telemetry);
         OdoAim.auto();
+
+        FlywheelConstants.setIsAuto(false);
 
         if (PoseStorage.autoEnd != null) {
             follower.setPose(PoseStorage.autoEnd);
@@ -87,7 +87,7 @@ public class TeleOp extends OpMode {
         currentActionB = TeleActions.IDLE;
         previousActionB = null;
 
-        waitSecondBeforeStart = new Timer();
+        waitAfterStart = new Timer();
 
         SnakeColors(ledStick, currentAlliance.allianceColor);
     }
@@ -95,13 +95,16 @@ public class TeleOp extends OpMode {
     @Override
     public void start() {
         frontRamp.setPosition(1);
+
         hoodAngle.setPosition(0.38);
+
         rampWasLastPressed = false;
         rampToggle = false;
         odoAimToggle = false;
         aimWasLastPressed = false;
         recalLastPressed = false;
-        waitSecondBeforeStart.reset();
+
+        waitAfterStart.reset();
     }
 
     @Override
@@ -117,9 +120,6 @@ public class TeleOp extends OpMode {
         follower.update();
         OdoAim.update();
         OdoAim.telemetry();
-        //double pos = 90.0 / 180.0;
-        //turretRight.setPosition(servoPos);
-        //turretLeft.setPosition(servoPos);
         // Driving ---------
 
         // Actions ---------
@@ -153,7 +153,13 @@ public class TeleOp extends OpMode {
 
         // Flywheel ---------
         // Turn on flywheel velocity on start
+        FlywheelConstants.loop();
+        flywheelRPM = FlywheelConstants.flywheelRPM;
         flywheel.setVelocity(rpmToTPS(flywheelRPM));
+        p = FlywheelConstants.p;
+        i = FlywheelConstants.i;
+        d = FlywheelConstants.d;
+        f = FlywheelConstants.f;
         flywheelPIDF.p = p;
         flywheelPIDF.i = i;
         flywheelPIDF.d = d;
@@ -161,10 +167,20 @@ public class TeleOp extends OpMode {
         flywheel.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, flywheelPIDF);
         // Flywheel ---------
 
+        // Hood angles ---------
+        // Hood Angle is updated by FlywheelConstants.loop();
+        hoodAnglePos = FlywheelConstants.hoodAnglePos;
+        hoodAngle.setPosition(hoodAnglePos);
+        // Hood angles ---------
+
         // Controls ---------
         if (gamepad1.left_bumper) {
             currentActionB = TeleActions.BACKSPIN;
-        } else if (waitSecondBeforeStart.seconds() > 2) {
+        } else if (waitAfterStart.seconds() > 2) {
+            currentActionB = TeleActions.INTAKING;
+        }
+
+        if (gamepad1.right_bumper) {
             currentActionB = TeleActions.INTAKING;
         }
 
@@ -210,12 +226,6 @@ public class TeleOp extends OpMode {
         recalLastPressed = gamepad1.dpad_down;
         // Controls ---------
 
-        // Hood angles ---------
-        // hoodAngling.setFlywheelSpeedToHoodAngle(hoodAngle.getPosition(), flywheelPIDF);
-
-        hoodAngle.setPosition(hoodAngleTemp);
-        // Hood angles ---------
-
         // Telemetry ---------
         telemetry.addData("Current Action:", currentActionB);
         telemetry.addData("Flywheel Power:", flywheel.getPower());
@@ -225,8 +235,7 @@ public class TeleOp extends OpMode {
         telemetry.addData("Alliance Color:", currentAlliance.allianceColor);
         telemetry.addData("Robot Heading:", follower.pose().heading());
 
-        PanelsTelemetry.INSTANCE.getTelemetry();
-        PanelsTelemetry.INSTANCE.getFtcTelemetry();
+        panelsTelemetry.update(telemetry);
         // Telemetry ---------
     }
 
@@ -245,9 +254,6 @@ public class TeleOp extends OpMode {
     private DcMotorEx intake;
     private DcMotorEx inner;
     private DcMotorEx flywheel;
-
-    //private Servo turretRight;
-    //private Servo turretLeft;
     private Servo ballStop;
     private Servo frontRamp;
     private Servo hoodAngle;
@@ -264,8 +270,6 @@ public class TeleOp extends OpMode {
         intake = hardwareMap.get(DcMotorEx.class, "intake");
         inner = hardwareMap.get(DcMotorEx.class, "inner");
 
-        //turretRight = hardwareMap.get(Servo.class, "rightTurret");
-        //turretLeft = hardwareMap.get(Servo.class, "leftTurret");
         ballStop = hardwareMap.get(Servo.class, "ballStop");
         frontRamp = hardwareMap.get(Servo.class, "frontRamp");
         hoodAngle = hardwareMap.get(Servo.class, "hoodAngle");
