@@ -241,11 +241,11 @@ public class Auto extends OpMode {
                 follower.follow(goIntakePath());
 
                 if (pathTimer.seconds() > 3.5) {
-                    currentState = AllAutoStates.goToShootPosTwo;
+                    currentState = AllAutoStates.goToShootPosTwoNoTip;
                     pathTimer.reset();
                 }
                 break;
-            case goToShootPosTwo:
+            case goToShootPosTwoNoTip:
                 ballStop.setPosition(0.7);
 
                 follower.follow(shootTwoTipped());
@@ -253,22 +253,22 @@ public class Auto extends OpMode {
                 ballStop.setPosition(0.7);
 
                 if (follower.isBusy() || pathTimer.seconds() > 4) {
-                    currentState = AllAutoStates.startShootTwo;
+                    currentState = AllAutoStates.startShootTwoTip;
                     pathTimer.reset();
                 }
                 break;
-            case startShootTwo:
+            case startShootTwoTip:
                 ballStop.setPosition(0.9);
 
                 intake.setPower(-1);
                 inner.setPower(-1);
 
                 if (pathTimer.seconds() > 4.5) {
-                    currentState = AllAutoStates.endShootTwo;
+                    currentState = AllAutoStates.endShootTwoTip;
                     pathTimer.reset();
                 }
                 break;
-            case endShootTwo:
+            case endShootTwoTip:
                 ballStop.setPosition(0.7);
 
                 flywheelRPM = 0;
@@ -278,7 +278,7 @@ public class Auto extends OpMode {
 
                 if (pathTimer.seconds() > .5) {
                     if (isTipped) {
-                        currentState = AllAutoStates.goToFullParking;
+                        currentState = AllAutoStates.goToFullParkingTip;
                     } else {
                         currentState = AllAutoStates.goToHalfOfParking;
                     }
@@ -289,11 +289,11 @@ public class Auto extends OpMode {
                 follower.follow(halfOfParking());
 
                 if (follower.isBusy() || pathTimer.seconds() > 1) {
-                    currentState = AllAutoStates.goToFullParking;
+                    currentState = AllAutoStates.goToFullParkingTip;
                     pathTimer.reset();
                 }
                 break;
-            case goToFullParking:
+            case goToFullParkingTip:
                 follower.follow(fullParking());
 
                 intake.setPower(1);

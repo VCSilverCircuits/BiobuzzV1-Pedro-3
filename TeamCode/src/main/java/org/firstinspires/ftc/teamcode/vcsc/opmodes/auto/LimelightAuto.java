@@ -13,6 +13,7 @@ import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -27,10 +28,8 @@ import org.firstinspires.ftc.teamcode.vcsc.subsystems.posesystems.PoseConstants;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.posesystems.PoseStorage;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.turret.FlywheelConstants;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.turret.odoAim;
-import org.firstinspires.ftc.vision.apriltag.AprilTagClusterDetection;
-import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 
-// temp shared auto
+@Autonomous
 public class LimelightAuto extends OpMode {
     // MAPPINGS ------------------------
     private DcMotorEx frontRight;
@@ -46,6 +45,7 @@ public class LimelightAuto extends OpMode {
     private Servo turretLeft;*/
     private Servo ballStop;
     private Servo frontRamp;
+    private Servo hood;
 
     private GoBildaPrismDriver ledStick;
     private GoBildaPinpointDriver pinpointDriver;
@@ -65,6 +65,7 @@ public class LimelightAuto extends OpMode {
         turretLeft = hardwareMap.get(Servo.class, "turretleft");*/
         ballStop = hardwareMap.get(Servo.class, "ballStop");
         frontRamp = hardwareMap.get(Servo.class, "frontRamp");
+        hood = hardwareMap.get(Servo.class, "hoodAngle");
 
         ledStick = hardwareMap.get(GoBildaPrismDriver.class, "ledStick");
         pinpointDriver = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
@@ -83,26 +84,34 @@ public class LimelightAuto extends OpMode {
      */
     private boolean isTipped;
 
+    private boolean alreadyChecked = false;
+
     private AllAutoStates currentState;
 
     private Timer pathTimer;
     private Timer matchTimer;
 
     PIDFCoefficients flywheelPIDF = new PIDFCoefficients(p, i, d, f);
-    public static double p = 36;
-    public static double i = 1;
-    public static double d = 28.5;
-    public static double f = 30;
-    private static double flywheelRPM = 2440;
+    public static double p = 39.5;
+    public static double i = 0;
+    public static double d = 34;
+    public static double f = 23;
+    public static double flywheelRPM = 3000;
 
     private final Pose start = PoseConstants.p.of(58, 8, 90);
-    private final Pose goToIntake = PoseConstants.p.of(8.5, 9, 270);
+    private final Pose goToIntake = PoseConstants.p.of(0.2281, 5.7762, 270);
     private final Pose goToIntakeControl1 = PoseConstants.p.of(5.2893, 62.7583, 0);
-    private final Pose goToIntakeSegment1Start = PoseConstants.p.of(8.5, 9, 90);
-    private final Pose goToIntakeSegment1End = PoseConstants.p.of(8.5, 9, 270);
-    private final Pose goToIntakeSegment2Start = PoseConstants.p.of(8.5, 9, 270);
-    private final Pose goToIntakeSegment2End = PoseConstants.p.of(8.5, 9, 270);
-    private final Pose shootTwoTippedStart = PoseConstants.p.of(8.5, 9, 270);
+    private final Pose goToIntakeSegment1Start = PoseConstants.p.of(0.2281, 5.7762, 90);
+    private final Pose goToIntakeSegment1End = PoseConstants.p.of(0.2281, 5.7762, 270);
+    private final Pose goToIntakeSegment2Start = PoseConstants.p.of(0.2281, 5.7762, 270);
+    private final Pose goToIntakeSegment2End = PoseConstants.p.of(0.2281, 5.7762, 270);
+    private final Pose checkLimelight = PoseConstants.p.of(42.4274, 37.76, 90);
+    private final Pose checkLimelightSegment1Start = PoseConstants.p.of(35.3257, 34.6653, 270);
+    private final Pose checkLimelightSegment1End = PoseConstants.p.of(35.3257, 34.6653, 270);
+    private final Pose checkLimelightSegment2Start = PoseConstants.p.of(35.3257, 34.6653, 270);
+    private final Pose checkLimelightSegment2End = PoseConstants.p.of(35.3257, 34.6653, 90);
+    private final Pose shootTwoNoTipped = PoseConstants.p.of(57.2058, 8.0568, 90);
+    private final Pose shootTwoTippedStart = PoseConstants.p.of(35.3257, 34.6653, 90);
     private final Pose shootTwoTipped = PoseConstants.p.of(58, 133, 270);
     private final Pose shootTwoTippedControl1 = PoseConstants.p.of(35.3182, 52.6558, 0);
     private final Pose shootTwoTippedControl2 = PoseConstants.p.of(15.8399, 139.0456, 0);
@@ -112,19 +121,22 @@ public class LimelightAuto extends OpMode {
     private final Pose fullOfParkPathStart = PoseConstants.p.of(28.1865, 49.9137, 180);
     private final Pose fullOfParkPathEnd = PoseConstants.p.of(10.4471, 95.1985, 90);
 
-    public Path goIntakePath() {
-        return Paths.curve(start, goToIntakeControl1, goToIntake)
+    public Path goToIntake() {
+        return Paths
+                .curve(start, goToIntakeControl1, goToIntake)
                 .heading(Interpolator.piecewise()
-                        .until(0.5, Interpolator.linear(goToIntakeSegment1Start, goToIntakeSegment1End))
+                        .until(0.5, Interpolator
+                                .linear(goToIntakeSegment1Start, goToIntakeSegment1End))
                         .until(1, Interpolator.linear(goToIntakeSegment2Start, goToIntakeSegment2End)));
     }
 
-    // not tipped path
-    public Path shootTwoNoTipped() {
-        return Paths.curve(goToIntake, goToIntakeControl1, start)
+    public Path checkLimelight() {
+        return Paths
+                .line(goToIntake, checkLimelight)
                 .heading(Interpolator.piecewise()
-                        .until(0.5, Interpolator.linear(goToIntakeSegment1End, goToIntakeSegment1Start))
-                        .until(1, Interpolator.linear(goToIntakeSegment2End, goToIntakeSegment2Start)));
+                        .until(0.5, Interpolator
+                                .linear(checkLimelightSegment1Start, checkLimelightSegment1End))
+                        .until(1, Interpolator.linear(checkLimelightSegment2Start, checkLimelightSegment2End)));
     }
 
     // Tipped path
@@ -134,17 +146,27 @@ public class LimelightAuto extends OpMode {
                 .linear(shootTwoTippedStart, shootTwoTipped);
     }
 
+    // Not tipped path
+    public Path shootTwoNoTipped() {
+        return Paths.line(checkLimelight, shootTwoNoTipped).constant(shootTwoNoTipped);
+    }
+
     // Use if not tipped
     // If tipped do not use
     public Path halfOfParking() {
-        return Paths.line(halfOfParkPathStart, halfOfParkPathEnd).linear(halfOfParkPathStart, halfOfParkPathEnd);
+        return Paths.line(shootTwoNoTipped, halfOfParkPathEnd).linear(halfOfParkPathStart, halfOfParkPathEnd);
     }
 
-    public Path fullParking() {
+    public Path fullParkingNoTip() {
         return Paths.line(fullOfParkPathStart, fullOfParkPathEnd).linear(fullOfParkPathStart, fullOfParkPathEnd);
     }
 
-    private int[] aprilTagIds;
+    // If tipped use
+    public Path fullParkingTip() {
+        return Paths.line(shootTwoTipped, fullOfParkPathEnd).linear(fullOfParkPathStart, fullOfParkPathEnd);
+    }
+
+    private int aprilTagIds;
 
     @Override
     public void init() {
@@ -165,9 +187,9 @@ public class LimelightAuto extends OpMode {
         isTipped = false;
 
         if (currentAlliance.allianceColor == AllianceColor.RED) {
-            aprilTagIds = new int[]{34, 35, 36, 37};
+            aprilTagIds = 34;
         } else {
-            aprilTagIds = new int[]{42, 43, 44, 45};
+            aprilTagIds = 42;
         }
 
         limelight.pipelineSwitch(1);
@@ -182,6 +204,8 @@ public class LimelightAuto extends OpMode {
     public void start() {
         pathTimer.reset();
         matchTimer.reset();
+
+        hood.setPosition(0);
 
         frontRamp.setPosition(0.9);
     }
@@ -206,6 +230,7 @@ public class LimelightAuto extends OpMode {
         flywheelPIDF.f = f;
         flywheel.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, flywheelPIDF);
 
+        telemetry.addData("isTipped", isTipped);
         telemetry.addData("Pose", follower.pose());
         telemetry.addData("isBusy", follower.isBusy());
         telemetry.addData("RobotHeading", follower.pose().heading());
@@ -217,14 +242,12 @@ public class LimelightAuto extends OpMode {
             case startFlywheel:
                 ballStop.setPosition(0.7);
 
-                flywheelRPM = 2440;
-
-                intake.setPower(-1);
                 if (pathTimer.seconds() > 2) {
+                    intake.setPower(-1);
                     inner.setPower(-1);
                 }
 
-                if (pathTimer.seconds() > 4) {
+                if (pathTimer.seconds() > 5) {
                     ballStop.setPosition(0.9);
                     currentState = AllAutoStates.startShootOne;
                     pathTimer.reset();
@@ -245,19 +268,6 @@ public class LimelightAuto extends OpMode {
                 inner.setPower(0);
                 intake.setPower(1);
 
-                LLResult result = limelight.getLatestResult();
-
-                for (LLResultTypes.FiducialResult fiducial : result.getFiducialResults()) {
-                    int seenId = fiducial.getFiducialId();
-                    for (int targetId : aprilTagIds) {
-                        if (seenId == targetId) {
-                            isTipped = true;
-                        } else {
-                            isTipped = false;
-                        }
-                    }
-                }
-
                 if (pathTimer.seconds() > .5) {
                     currentState = AllAutoStates.goToIntaking;
                     pathTimer.reset();
@@ -267,69 +277,137 @@ public class LimelightAuto extends OpMode {
                 intake.setPower(-1);
                 inner.setPower(-1);
 
-                follower.follow(goIntakePath());
+                follower.follow(goToIntake());
 
                 if (pathTimer.seconds() > 3.5) {
-                    currentState = AllAutoStates.goToShootPosTwo;
+                    currentState = AllAutoStates.limelightPath;
                     pathTimer.reset();
                 }
                 break;
-            case goToShootPosTwo:
-                boolean alreadyFollowed = false;
+            case limelightPath:
+                follower.follow(checkLimelight());
 
-                if (!alreadyFollowed) {
-                    if (isTipped) {
-                        follower.follow(shootTwoTipped());
-                        alreadyFollowed = true;
-                        return;
-                    } else {
-                        follower.follow(shootTwoNoTipped());
-                        alreadyFollowed = true;
-                        return;
-                    }
+                if (!follower.isBusy() || pathTimer.seconds() > 1) {
+                    currentState = AllAutoStates.checkLimelight;
+                    alreadyChecked = false;
+                    pathTimer.reset();
                 }
+                break;
+            case checkLimelight:
+                if (alreadyChecked) {
+                    LLResult result = limelight.getLatestResult();
+
+                    for (LLResultTypes.FiducialResult fiducial : result.getFiducialResults()) {
+                        int seenId = fiducial.getFiducialId();
+                        telemetry.addData("Seen Id", seenId);
+                        if (seenId == aprilTagIds) {
+                            isTipped = false;
+                            ballStop.setPosition(0.7);
+                        } else {
+                            isTipped = true;
+                            ballStop.setPosition(0.7);
+                        }
+                    }
+                    ballStop.setPosition(0.7);
+                    alreadyChecked = true;
+                }
+
+                if (pathTimer.seconds() > 3) {
+                    if (isTipped) {
+                        currentState = AllAutoStates.goToShootPosTwoTip;
+                    } else {
+                        currentState = AllAutoStates.goToShootPosTwoNoTip;
+                    }
+                    pathTimer.reset();
+                }
+                break;
+            case goToShootPosTwoTip:
+                ballStop.setPosition(0.7);
+                follower.follow(shootTwoTipped());
+                ballStop.setPosition(0.7);
 
                 if (follower.isBusy() || pathTimer.seconds() > 4) {
-                    currentState = AllAutoStates.startShootTwo;
+                    currentState = AllAutoStates.startShootTwoTip;
                     pathTimer.reset();
                 }
                 break;
-            case startShootTwo:
+            case goToShootPosTwoNoTip:
+                ballStop.setPosition(0.7);
+                follower.follow(shootTwoNoTipped());
+                ballStop.setPosition(0.7);
+
+                if (follower.isBusy() || pathTimer.seconds() > 4) {
+                    currentState = AllAutoStates.startShootTwoNoTip;
+                    ballStop.setPosition(0.7);
+                    pathTimer.reset();
+                }
+                break;
+            case startShootTwoTip:
+                if (pathTimer.seconds() > 2) {
+                    ballStop.setPosition(0.9);
+
+                    intake.setPower(-1);
+                    inner.setPower(-1);
+                }
+                if (pathTimer.seconds() > 5.5) {
+                    currentState = AllAutoStates.endShootTwoTip;
+                    pathTimer.reset();
+                }
+                break;
+            case endShootTwoTip:
+                ballStop.setPosition(0.7);
+
+                inner.setPower(0);
+                intake.setPower(0);
+
+                if (pathTimer.seconds() > .5) {
+                    currentState = AllAutoStates.goToFullParkingTip;
+                    pathTimer.reset();
+                }
+                break;
+            case startShootTwoNoTip:
+                ballStop.setPosition(0.9);
+
                 intake.setPower(-1);
                 inner.setPower(-1);
 
                 if (pathTimer.seconds() > 3.5) {
-                    currentState = AllAutoStates.endShootTwo;
+                    currentState = AllAutoStates.endShootTwoNoTip;
                     pathTimer.reset();
                 }
                 break;
-            case endShootTwo:
+            case endShootTwoNoTip:
                 ballStop.setPosition(0.7);
 
-                flywheelRPM = 0;
-
                 inner.setPower(0);
-                intake.setPower(1);
+                intake.setPower(0);
 
-                if (pathTimer.seconds() > .5) {
-                    if (isTipped) {
-                        currentState = AllAutoStates.goToFullParking;
-                    } else {
-                        currentState = AllAutoStates.goToHalfOfParking;
-                    }
+                if (pathTimer.seconds() > 1) {
+                    currentState = AllAutoStates.goToHalfOfParking;
                     pathTimer.reset();
                 }
                 break;
             case goToHalfOfParking:
                 follower.follow(halfOfParking());
 
-                if (follower.isBusy() || pathTimer.seconds() > 1) {
-                    currentState = AllAutoStates.goToFullParking;
+                if (follower.isBusy() || pathTimer.seconds() > 5) {
+                    currentState = AllAutoStates.goToFullParkingNoTip;
                     pathTimer.reset();
                 }
                 break;
-            case goToFullParking:
-                follower.follow(fullParking());
+            case goToFullParkingTip:
+                follower.follow(fullParkingTip());
+
+                intake.setPower(1);
+                inner.setPower(0);
+
+                if (follower.isBusy() || pathTimer.seconds() > 2.5) {
+                    currentState = AllAutoStates.end;
+                    pathTimer.reset();
+                }
+                break;
+            case goToFullParkingNoTip:
+                follower.follow(fullParkingNoTip());
 
                 intake.setPower(1);
                 inner.setPower(0);
@@ -344,7 +422,6 @@ public class LimelightAuto extends OpMode {
 
                 intake.setPower(0);
                 inner.setPower(0);
-                frontRamp.setPosition(1);
 
                 PoseStorage.autoEnd = follower.pose();
 
