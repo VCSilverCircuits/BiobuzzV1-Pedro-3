@@ -287,24 +287,23 @@ public class LimelightAuto extends OpMode {
             case limelightPath:
                 follower.follow(checkLimelight());
 
-                if (!follower.isBusy() || pathTimer.seconds() > 1) {
+                if (!follower.isBusy() || pathTimer.seconds() > 3) {
                     currentState = AllAutoStates.checkLimelight;
                     alreadyChecked = false;
                     pathTimer.reset();
                 }
                 break;
             case checkLimelight:
-                if (alreadyChecked) {
+                if (!alreadyChecked) {
                     LLResult result = limelight.getLatestResult();
+                    isTipped = true;
 
                     for (LLResultTypes.FiducialResult fiducial : result.getFiducialResults()) {
                         int seenId = fiducial.getFiducialId();
                         telemetry.addData("Seen Id", seenId);
+
                         if (seenId == aprilTagIds) {
                             isTipped = false;
-                            ballStop.setPosition(0.7);
-                        } else {
-                            isTipped = true;
                             ballStop.setPosition(0.7);
                         }
                     }
@@ -343,7 +342,7 @@ public class LimelightAuto extends OpMode {
                 }
                 break;
             case startShootTwoTip:
-                if (pathTimer.seconds() > 2) {
+                if (pathTimer.seconds() > 4) {
                     ballStop.setPosition(0.9);
 
                     intake.setPower(-1);
