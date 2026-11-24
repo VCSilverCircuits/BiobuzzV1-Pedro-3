@@ -99,51 +99,75 @@ public class LimelightAuto extends OpMode {
     public static double flywheelRPM = 3000;
 
     private final Pose start = PoseConstants.p.of(58, 8, 90);
-    private final Pose goToIntake = PoseConstants.p.of(0.2281, 5.7762, 270);
+    private final Pose goToIntake = PoseConstants.p.of(-1, 5.7, 270);
     private final Pose goToIntakeControl1 = PoseConstants.p.of(5.2893, 62.7583, 0);
-    private final Pose goToIntakeSegment1Start = PoseConstants.p.of(0.2281, 5.7762, 90);
-    private final Pose goToIntakeSegment1End = PoseConstants.p.of(0.2281, 5.7762, 270);
-    private final Pose goToIntakeSegment2Start = PoseConstants.p.of(0.2281, 5.7762, 270);
-    private final Pose goToIntakeSegment2End = PoseConstants.p.of(0.2281, 5.7762, 270);
-    private final Pose checkLimelight = PoseConstants.p.of(42.4274, 37.76, 90);
-    private final Pose checkLimelightSegment1Start = PoseConstants.p.of(35.3257, 34.6653, 270);
-    private final Pose checkLimelightSegment1End = PoseConstants.p.of(35.3257, 34.6653, 270);
-    private final Pose checkLimelightSegment2Start = PoseConstants.p.of(35.3257, 34.6653, 270);
-    private final Pose checkLimelightSegment2End = PoseConstants.p.of(35.3257, 34.6653, 90);
+    private final Pose goToIntakeSegment1Start = PoseConstants.p.of(-1, 5.7, 90);
+    private final Pose goToIntakeSegment1End = PoseConstants.p.of(-1, 5.7, 270);
+    private final Pose goToIntakeSegment2Start = PoseConstants.p.of(-1, 5.7, 270);
+    private final Pose goToIntakeSegment2End = PoseConstants.p.of(-1, 5.7, 270);
+    private final Pose checkLimelight = PoseConstants.p.of(21.5002, 48.9034, 270);
+    private final Pose checkLimelightControl1 = PoseConstants.p.of(42.5865, 6.2738, 0);
+    private final Pose checkLimelightSegment1Start = PoseConstants.p.of(21.5002, 48.9034, 270);
+    private final Pose checkLimelightSegment1End = PoseConstants.p.of(21.5002, 48.9034, 270);
+    private final Pose checkLimelightSegment2Start = PoseConstants.p.of(21.5002, 48.9034, 270);
+    private final Pose checkLimelightSegment2End = PoseConstants.p.of(21.5002, 48.9034, 270);
+    private final Pose shootTwoTipped = PoseConstants.p.of(46.6006, 119.5955, 90);
+    private final Pose shootTwoTippedControl1 = PoseConstants.p.of(23.749, 49.3666, 0);
+    private final Pose shootTwoTippedControl2 = PoseConstants.p.of(29.8412, 88.9219, 0);
     private final Pose shootTwoNoTipped = PoseConstants.p.of(57.2058, 8.0568, 90);
-    private final Pose shootTwoTippedStart = PoseConstants.p.of(35.3257, 34.6653, 90);
-    private final Pose shootTwoTipped = PoseConstants.p.of(58, 133, 270);
-    private final Pose shootTwoTippedControl1 = PoseConstants.p.of(35.3182, 52.6558, 0);
-    private final Pose shootTwoTippedControl2 = PoseConstants.p.of(15.8399, 139.0456, 0);
-    private final Pose shootTwoTippedControl3 = PoseConstants.p.of(55.388, 99.7961, 0);
+    private final Pose flowerGrab = PoseConstants.p.of(46.73, 129.5, 90);
     private final Pose halfOfParkPathStart = PoseConstants.p.of(8.5, 9, 180);
     private final Pose halfOfParkPathEnd = PoseConstants.p.of(28.1865, 49.9137, 180);
     private final Pose fullOfParkPathStart = PoseConstants.p.of(28.1865, 49.9137, 180);
     private final Pose fullOfParkPathEnd = PoseConstants.p.of(10.4471, 95.1985, 90);
+    private final Pose goOtherFlower = PoseConstants.p.of(15.3619, 45, -180);
+    private final Pose goOtherFlowerEnd = PoseConstants.p.of(10, 45, -180);
+    private final Pose goOtherFlowerControl1 = PoseConstants.p.of(5.0324, 100.7406, 0);
+    /*
+    TODO: USE FOR FLOWER TWO GET AND LEAVE AND PARK
+
+    private final Pose goOtherFlower = poseFactory.of(20.4923, 46.3061, -180);
+    private final Pose goOtherFlowerControl1 = poseFactory.of(19.5644, 100.3334, 0);
+    private final Pose goFowardAfterFlower = poseFactory.of(9.6404, 46.2714, 0.1831);
+     */
 
     public Path goToIntake() {
         return Paths
-                .curve(start, goToIntakeControl1, goToIntake)
-                .heading(Interpolator.piecewise()
-                        .until(0.5, Interpolator
-                                .linear(goToIntakeSegment1Start, goToIntakeSegment1End))
+                .curve(start, goToIntakeControl1, goToIntake).heading(Interpolator.piecewise()
+                        .until(0.5, Interpolator.linear(goToIntakeSegment1Start, goToIntakeSegment1End))
                         .until(1, Interpolator.linear(goToIntakeSegment2Start, goToIntakeSegment2End)));
     }
 
     public Path checkLimelight() {
-        return Paths
-                .line(goToIntake, checkLimelight)
+        return Paths.curve(goToIntake, checkLimelightControl1, checkLimelight)
                 .heading(Interpolator.piecewise()
-                        .until(0.5, Interpolator
-                                .linear(checkLimelightSegment1Start, checkLimelightSegment1End))
-                        .until(1, Interpolator.linear(checkLimelightSegment2Start, checkLimelightSegment2End)));
+                        .until(0.5, Interpolator.linear(checkLimelightSegment1Start, checkLimelightSegment1End))
+                        .until(1, Interpolator.linear(checkLimelightSegment2Start, checkLimelightSegment2End)))
+        .with(Constants.foresightConfig.brakeAggression.at(0.64));
     }
 
-    // Tipped path
+    public Path goOtherFlower() {
+        return Paths.curve(flowerGrab, goOtherFlowerControl1, goOtherFlower).constant(goOtherFlower);
+    }
+
+    public Path goOtherFlowerGrab() {
+        return Paths.line(flowerGrab, goOtherFlowerEnd).constant(goOtherFlowerEnd);
+    }
+
+    public Path goOtherFlowerBack() {
+        return Paths.line(goOtherFlowerEnd, goOtherFlower).constant(goOtherFlower);
+    }
+
     public Path shootTwoTipped() {
-        return Paths
-                .curve(shootTwoTippedStart, shootTwoTippedControl1, shootTwoTippedControl2, shootTwoTippedControl3, shootTwoTipped)
-                .linear(shootTwoTippedStart, shootTwoTipped);
+        return Paths.curve(checkLimelight, shootTwoTippedControl1, shootTwoTippedControl2, shootTwoTipped).constant(shootTwoTipped);
+    }
+
+    public Path flowerGrabOne() {
+        return Paths.line(shootTwoTipped, flowerGrab).constant(flowerGrab);
+    }
+
+    public Path flowerGrabEndOne() {
+        return Paths.line(flowerGrab, shootTwoTipped).constant(flowerGrab);
     }
 
     // Not tipped path
@@ -163,7 +187,7 @@ public class LimelightAuto extends OpMode {
 
     // If tipped use
     public Path fullParkingTip() {
-        return Paths.line(shootTwoTipped, fullOfParkPathEnd).linear(fullOfParkPathStart, fullOfParkPathEnd);
+        return Paths.line(goOtherFlower, fullOfParkPathEnd).linear(fullOfParkPathStart, fullOfParkPathEnd);
     }
 
     private int aprilTagIds;
@@ -208,6 +232,8 @@ public class LimelightAuto extends OpMode {
         hood.setPosition(0);
 
         frontRamp.setPosition(0.9);
+
+        OdoAim.startOfAutonomous();
     }
 
     @Override
@@ -228,8 +254,10 @@ public class LimelightAuto extends OpMode {
         flywheelPIDF.i = i;
         flywheelPIDF.d = d;
         flywheelPIDF.f = f;
+        hood.setPosition(FlywheelConstants.hoodAnglePos);
         flywheel.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, flywheelPIDF);
 
+        telemetry.addData("Match Timer", matchTimer.seconds());
         telemetry.addData("isTipped", isTipped);
         telemetry.addData("Pose", follower.pose());
         telemetry.addData("isBusy", follower.isBusy());
@@ -247,7 +275,7 @@ public class LimelightAuto extends OpMode {
                     inner.setPower(-1);
                 }
 
-                if (pathTimer.seconds() > 5) {
+                if (pathTimer.seconds() > 3) {
                     ballStop.setPosition(0.9);
                     currentState = AllAutoStates.startShootOne;
                     pathTimer.reset();
@@ -257,7 +285,7 @@ public class LimelightAuto extends OpMode {
                 intake.setPower(-1);
                 inner.setPower(-1);
 
-                if (pathTimer.seconds() > 3.5) {
+                if (pathTimer.seconds() > 2) {
                     currentState = AllAutoStates.endShootOne;
                     pathTimer.reset();
                 }
@@ -268,7 +296,7 @@ public class LimelightAuto extends OpMode {
                 inner.setPower(0);
                 intake.setPower(1);
 
-                if (pathTimer.seconds() > .5) {
+                if (pathTimer.seconds() > .2) {
                     currentState = AllAutoStates.goToIntaking;
                     pathTimer.reset();
                 }
@@ -279,7 +307,7 @@ public class LimelightAuto extends OpMode {
 
                 follower.follow(goToIntake());
 
-                if (pathTimer.seconds() > 3.5) {
+                if (pathTimer.seconds() > 3) {
                     currentState = AllAutoStates.limelightPath;
                     pathTimer.reset();
                 }
@@ -308,10 +336,15 @@ public class LimelightAuto extends OpMode {
                         }
                     }
                     ballStop.setPosition(0.7);
+                    inner.setPower(0);
+                    intake.setPower(0);
                     alreadyChecked = true;
                 }
 
-                if (pathTimer.seconds() > 3) {
+                FlywheelConstants.flywheelRPM = 2800;
+                FlywheelConstants.hoodAnglePos = 0.035;
+
+                if (pathTimer.seconds() > .7) {
                     if (isTipped) {
                         currentState = AllAutoStates.goToShootPosTwoTip;
                     } else {
@@ -321,16 +354,21 @@ public class LimelightAuto extends OpMode {
                 }
                 break;
             case goToShootPosTwoTip:
+                inner.setPower(0);
+                intake.setPower(0);
                 ballStop.setPosition(0.7);
                 follower.follow(shootTwoTipped());
                 ballStop.setPosition(0.7);
 
-                if (follower.isBusy() || pathTimer.seconds() > 4) {
+                if (follower.isBusy() || pathTimer.seconds() > 6) {
                     currentState = AllAutoStates.startShootTwoTip;
                     pathTimer.reset();
                 }
                 break;
             case goToShootPosTwoNoTip:
+                inner.setPower(0);
+                intake.setPower(0);
+
                 ballStop.setPosition(0.7);
                 follower.follow(shootTwoNoTipped());
                 ballStop.setPosition(0.7);
@@ -342,13 +380,13 @@ public class LimelightAuto extends OpMode {
                 }
                 break;
             case startShootTwoTip:
-                if (pathTimer.seconds() > 4) {
-                    ballStop.setPosition(0.9);
-
-                    intake.setPower(-1);
+                if (pathTimer.seconds() > 2) {
                     inner.setPower(-1);
+                    intake.setPower(-1);
+
+                    ballStop.setPosition(0.9);
                 }
-                if (pathTimer.seconds() > 5.5) {
+                if (pathTimer.seconds() > 3) {
                     currentState = AllAutoStates.endShootTwoTip;
                     pathTimer.reset();
                 }
@@ -360,17 +398,19 @@ public class LimelightAuto extends OpMode {
                 intake.setPower(0);
 
                 if (pathTimer.seconds() > .5) {
-                    currentState = AllAutoStates.goToFullParkingTip;
+                    currentState = AllAutoStates.getFromFlower;
                     pathTimer.reset();
                 }
                 break;
             case startShootTwoNoTip:
+                if (pathTimer.seconds() > 2) {
+                    inner.setPower(-1);
+                    intake.setPower(-1);
+                }
+
                 ballStop.setPosition(0.9);
 
-                intake.setPower(-1);
-                inner.setPower(-1);
-
-                if (pathTimer.seconds() > 3.5) {
+                if (pathTimer.seconds() > 4) {
                     currentState = AllAutoStates.endShootTwoNoTip;
                     pathTimer.reset();
                 }
@@ -381,13 +421,84 @@ public class LimelightAuto extends OpMode {
                 inner.setPower(0);
                 intake.setPower(0);
 
-                if (pathTimer.seconds() > 1) {
+                if (pathTimer.seconds() > .5) {
                     currentState = AllAutoStates.goToHalfOfParking;
+                    pathTimer.reset();
+                }
+                break;
+            case getFromFlower:
+                intake.setPower(-1);
+                inner.setPower(-1);
+
+                frontRamp.setPosition(0.426);
+
+                if (pathTimer.seconds() > 1) {
+                    frontRamp.setPosition(0.438);
+                    follower.follow(flowerGrabOne());
+                }
+
+                if (pathTimer.seconds() > 3) {
+                    frontRamp.setPosition(0.426);
+                    follower.follow(flowerGrabEndOne());
+                }
+
+                if (pathTimer.seconds() > 3.5) {
+                    currentState = AllAutoStates.shootThreeStartTip;
+                    pathTimer.reset();
+                }
+                break;
+            case shootThreeStartTip:
+                ballStop.setPosition(0.9);
+
+                if (pathTimer.seconds() > 1.5) {
+                    currentState = AllAutoStates.shootThreeEndTip;
+                    pathTimer.reset();
+                }
+                break;
+            case shootThreeEndTip:
+                ballStop.setPosition(0.7);
+
+                if (pathTimer.seconds() > 0.5) {
+                    currentState = AllAutoStates.grabFlowerTwo;
+                    pathTimer.reset();
+                }
+                break;
+            case goToFlowerTwo:
+                follower.follow(goOtherFlower());
+
+                if (!follower.isBusy() || pathTimer.seconds() > 3) {
+                    currentState = AllAutoStates.grabFlowerTwo;
+                    pathTimer.reset();
+                }
+                break;
+            case grabFlowerTwo:
+                follower.follow(goOtherFlowerGrab());
+
+                if (pathTimer.seconds() > 3) {
+                    currentState = AllAutoStates.afterFlowerTwo;
+                    pathTimer.reset();
+                }
+                break;
+            case afterFlowerTwo:
+                if (pathTimer.seconds() > 1) {
+                    frontRamp.setPosition(0.438);
+                }
+
+                if (pathTimer.seconds() > 3) {
+                    frontRamp.setPosition(0.426);
+                    follower.follow(goOtherFlowerBack());
+                }
+
+                if (!follower.isBusy() || pathTimer.seconds() > 3.1) {
+                    //currentState = AllAutoStates.goToFullParkingTip;
                     pathTimer.reset();
                 }
                 break;
             case goToHalfOfParking:
                 follower.follow(halfOfParking());
+
+                FlywheelConstants.flywheelRPM = 3000;
+                FlywheelConstants.hoodAnglePos = 0;
 
                 if (follower.isBusy() || pathTimer.seconds() > 5) {
                     currentState = AllAutoStates.goToFullParkingNoTip;
@@ -395,7 +506,12 @@ public class LimelightAuto extends OpMode {
                 }
                 break;
             case goToFullParkingTip:
+                frontRamp.setPosition(0.9);
+
                 follower.follow(fullParkingTip());
+
+                FlywheelConstants.flywheelRPM = 3000;
+                FlywheelConstants.hoodAnglePos = 0;
 
                 intake.setPower(1);
                 inner.setPower(0);

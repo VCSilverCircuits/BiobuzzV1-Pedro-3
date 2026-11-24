@@ -153,6 +153,12 @@ public class odoAim {
         this.isManualMode = true;
     }
 
+    // For start of auto so if off centered its centered
+    public void startOfAutonomous() {
+        turretHeadingRight.setPosition(0.5);
+        turretHeadingLeft.setPosition(0.5);
+    }
+
     // converts the degree angle to a scale of 0.0-1.0 to set the servo position
     public double convertToServoRotations(double radians) {
         double servoRot = ((radians - MIN_SERVO_RADIANS) / (MAX_SERVO_RADIANS - MIN_SERVO_RADIANS));

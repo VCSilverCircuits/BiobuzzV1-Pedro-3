@@ -17,7 +17,6 @@ import org.firstinspires.ftc.teamcode.pedro.Constants;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-@Autonomous
 
 public class ivyTestAuto extends LinearOpMode {
     private Follower follower;
