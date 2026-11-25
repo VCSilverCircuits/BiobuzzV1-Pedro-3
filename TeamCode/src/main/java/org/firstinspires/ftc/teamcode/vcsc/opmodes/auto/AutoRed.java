@@ -6,7 +6,7 @@ import org.firstinspires.ftc.teamcode.vcsc.subsystems.alliance.AllianceColor;
 import org.firstinspires.ftc.teamcode.vcsc.subsystems.alliance.currentAlliance;
 
 @Autonomous(preselectTeleOp = "TeleOpRed")
-public class AutoRed extends Auto {
+public class AutoRed extends LimelightAuto {
     public AutoRed() {
         currentAlliance.allianceColor = AllianceColor.RED;
     }

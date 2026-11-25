@@ -95,6 +95,7 @@ public class TeleOp extends OpMode {
     @Override
     public void start() {
         frontRamp.setPosition(1);
+        ballStop.setPosition(0.7);
 
         hoodAngle.setPosition(0.38);
 

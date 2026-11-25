@@ -16,6 +16,7 @@ public enum AllAutoStates {
     getFromFlower,
     shootThreeStartTip,
     shootThreeEndTip,
+    goToFlowerTwoPath1, // to remove
     goToFlowerTwo,
     grabFlowerTwo,
     afterFlowerTwo,
